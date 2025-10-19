@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home,
   Sliders,
-  Flask,
+  FlaskConical as Flask,
   BarChart3,
   X,
   ChevronRight,
