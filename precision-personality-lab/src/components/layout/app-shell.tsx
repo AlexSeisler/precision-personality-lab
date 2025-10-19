@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
+import { ToastContainer } from "@/components/ui/toast";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -25,6 +26,8 @@ export function AppShell({ children }: AppShellProps) {
           <div className="relative z-10">{children}</div>
         </main>
       </div>
+
+      <ToastContainer />
     </div>
   );
 }

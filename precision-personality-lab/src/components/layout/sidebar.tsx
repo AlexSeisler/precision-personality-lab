@@ -85,7 +85,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       transition-colors cursor-pointer group
                       ${
                         isActive
-                          ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                          ? "bg-[#4A8FFF]/20 text-[#4A8FFF] border border-[#4A8FFF]/30"
                           : "text-gray-300 hover:bg-white/5 hover:text-white border border-transparent"
                       }
                     `}
@@ -95,7 +95,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     {isActive && (
                       <motion.div
                         layoutId="activeTab"
-                        className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg"
+                        className="absolute inset-0 bg-gradient-to-r from-[#4A8FFF]/10 to-[#FF7E47]/10 rounded-lg"
                         transition={{
                           type: "spring",
                           stiffness: 500,
@@ -127,9 +127,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </nav>
 
           <div className="pt-4 border-t border-white/10">
-            <div className="p-4 rounded-lg bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20">
+            <div className="p-4 rounded-lg bg-gradient-to-br from-[#4A8FFF]/10 to-[#FF7E47]/10 border border-[#4A8FFF]/20">
               <p className="text-xs text-gray-400 mb-1">Assessment Project</p>
-              <p className="text-sm font-semibold text-cyan-400">
+              <p className="text-sm font-semibold gradient-text-precision">
                 GenAI.Labs Technical
               </p>
             </div>

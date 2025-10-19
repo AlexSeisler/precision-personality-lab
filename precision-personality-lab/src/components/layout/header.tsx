@@ -34,9 +34,9 @@ export function Header({ onMenuClick }: HeaderProps) {
             transition={{ type: "spring", stiffness: 400 }}
           >
             <div className="relative">
-              <Sparkles className="w-6 h-6 text-cyan-400" />
+              <Sparkles className="w-6 h-6 text-[#4A8FFF]" />
               <motion.div
-                className="absolute inset-0 bg-cyan-400/20 rounded-full blur-lg"
+                className="absolute inset-0 bg-[#4A8FFF]/20 rounded-full blur-lg"
                 animate={{
                   scale: [1, 1.2, 1],
                   opacity: [0.5, 0.8, 0.5],
@@ -49,7 +49,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               />
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold gradient-text-precision">
                 Precision + Personality Lab
               </h1>
               <p className="text-xs text-gray-400">GenAI Parameter Explorer</p>
