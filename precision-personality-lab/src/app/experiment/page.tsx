@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Flask, Sparkles, Loader2 } from 'lucide-react';
+import { FlaskConical as Flask, Sparkles, Loader2 } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PromptInput } from '@/components/features/prompt-input';
