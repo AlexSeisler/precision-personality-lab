@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase/client';
-import { logAuditEvent } from '@/lib/api/audit-logs';
+import { logAuditEvent } from '@/lib/api/audit';
 import type { LLMResponse } from '@/types';
 
 interface ExtendedMetricsSummary {

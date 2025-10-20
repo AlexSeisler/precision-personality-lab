@@ -8,12 +8,14 @@ interface CalibrationState {
   isCalibrated: boolean;
   calibrationMode: 'quick' | 'deep';
   currentQuestionIndex: number;
+  currentCalibrationId: string | null;
 
   setAnswer: (answer: CalibrationAnswer) => void;
   setParameterRanges: (ranges: ParameterRange) => void;
   setCalibrated: (calibrated: boolean) => void;
   setCalibrationMode: (mode: 'quick' | 'deep') => void;
   setCurrentQuestionIndex: (index: number) => void;
+  setCalibrationId: (id: string | null) => void;
   resetCalibration: () => void;
   getAnswerByQuestionId: (questionId: string) => CalibrationAnswer | undefined;
 }
@@ -33,6 +35,7 @@ export const useCalibrationStore = create<CalibrationState>()(
       isCalibrated: false,
       calibrationMode: 'quick',
       currentQuestionIndex: 0,
+      currentCalibrationId: null,
 
       setAnswer: (answer) => {
         const existingIndex = get().answers.findIndex(
@@ -56,11 +59,14 @@ export const useCalibrationStore = create<CalibrationState>()(
 
       setCurrentQuestionIndex: (index) => set({ currentQuestionIndex: index }),
 
+      setCalibrationId: (id) => set({ currentCalibrationId: id }),
+
       resetCalibration: () => set({
         answers: [],
         parameterRanges: defaultParameterRanges,
         isCalibrated: false,
         currentQuestionIndex: 0,
+        currentCalibrationId: null,
       }),
 
       getAnswerByQuestionId: (questionId) => {

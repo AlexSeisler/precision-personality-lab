@@ -3,7 +3,8 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useUIStore } from '@/store/ui-store';
-import { logAuditEvent } from '@/lib/api/audit-logs';
+import { useMetricsStore } from '@/store/metrics-store';
+import { logAuditEvent } from '@/lib/api/audit';
 
 export function useRealtimeCalibrations(
   onInsert?: (payload: any) => void,
@@ -30,7 +31,7 @@ export function useRealtimeCalibrations(
             filter: `user_id=eq.${user.id}`,
           },
           async (payload) => {
-            await logAuditEvent('experiment_inserted', { record: payload.new });
+            await logAuditEvent('calibration_started', { record: payload.new });
             onInsert?.(payload);
             addToast('✨ Calibration synced', 'info', 2000);
           }
@@ -115,6 +116,7 @@ export function useRealtimeExperiments(
 ) {
   const { user } = useAuth();
   const { addToast } = useUIStore();
+  const { computeSummary } = useMetricsStore();
 
   useEffect(() => {
     if (!user) return;
@@ -134,6 +136,11 @@ export function useRealtimeExperiments(
           },
           async (payload) => {
             await logAuditEvent('experiment_inserted', { record: payload.new });
+
+            if (payload.new?.responses && Array.isArray(payload.new.responses)) {
+              await computeSummary(payload.new.responses, payload.new.calibration_id);
+            }
+
             onInsert?.(payload);
             addToast('🧪 New experiment synced', 'success', 2000);
           }
@@ -208,5 +215,5 @@ export function useRealtimeExperiments(
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [user, onInsert, onUpdate, onDelete, addToast]);
+  }, [user, onInsert, onUpdate, onDelete, addToast, computeSummary]);
 }

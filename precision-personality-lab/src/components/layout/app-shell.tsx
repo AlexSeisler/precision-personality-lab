@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { PageTransition } from "./page-transition";
 import { ToastContainer } from "@/components/ui/toast";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useCalibrationStore } from "@/store/calibration-store";
+import { supabase } from "@/lib/supabase/client";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -20,6 +23,39 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useAuth();
+  const { setCalibrationId, setParameterRanges, setCalibrated } = useCalibrationStore();
+
+  useEffect(() => {
+    const loadLatestCalibration = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('calibrations')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!error && data) {
+          setCalibrationId(data.id);
+          setParameterRanges({
+            temperature: { min: Number(data.temperature_min), max: Number(data.temperature_max) },
+            topP: { min: Number(data.top_p_min), max: Number(data.top_p_max) },
+            maxTokens: { min: data.max_tokens_min, max: data.max_tokens_max },
+            frequencyPenalty: { min: Number(data.frequency_penalty_min), max: Number(data.frequency_penalty_max) },
+          });
+          setCalibrated(true);
+        }
+      } catch (error) {
+        console.error('Failed to load calibration:', error);
+      }
+    };
+
+    loadLatestCalibration();
+  }, [user, setCalibrationId, setParameterRanges, setCalibrated]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-x-hidden">

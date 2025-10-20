@@ -12,7 +12,8 @@ import { ExportModal } from '@/components/features/export-modal';
 import { useExperimentStore } from '@/store/experiment-store';
 import { useCalibrationStore } from '@/store/calibration-store';
 import { useUIStore } from '@/store/ui-store';
-import { generateMultipleResponses } from '@/lib/mock-data/response-generator';
+import { useMetricsStore } from '@/store/metrics-store';
+import { supabase } from '@/lib/supabase/client';
 
 
 export default function ExperimentPage() {
@@ -28,9 +29,10 @@ export default function ExperimentPage() {
     setGenerating,
   } = useExperimentStore();
 
-  const { isCalibrated, parameterRanges } = useCalibrationStore();
+  const { isCalibrated, parameterRanges, currentCalibrationId } = useCalibrationStore();
   const { addToast } = useUIStore();
-  const [responseCount, setResponseCount] = useState(3);
+  const { computeSummary } = useMetricsStore();
+  const [responseCount, setResponseCount] = useState(1);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [hasLoadedCalibration, setHasLoadedCalibration] = useState(false);
 
@@ -57,20 +59,54 @@ export default function ExperimentPage() {
       return;
     }
 
+    if (!currentCalibrationId) {
+      addToast('No calibration found. Please complete calibration first.', 'error');
+      router.push('/calibration');
+      return;
+    }
+
     setGenerating(true);
-    addToast('Generating responses...', 'info', 2000);
+    addToast('Generating response...', 'info');
 
-    setTimeout(() => {
-      const responses = generateMultipleResponses(
-        currentPrompt,
-        currentParameters,
-        responseCount
-      );
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
 
-      setResponses(responses);
+      if (!session) {
+        addToast('Authentication required', 'error');
+        setGenerating(false);
+        return;
+      }
+
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          prompt: currentPrompt,
+          calibrationId: currentCalibrationId,
+          parameters: currentParameters,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate response');
+      }
+
+      if (data.experiment?.responses) {
+        setResponses(data.experiment.responses);
+        await computeSummary(data.experiment.responses, currentCalibrationId);
+        addToast('Response generated successfully!', 'success');
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+      addToast(error instanceof Error ? error.message : 'Failed to generate response', 'error');
+    } finally {
       setGenerating(false);
-      addToast(`Generated ${responses.length} responses successfully!`, 'success');
-    }, 2000);
+    }
   };
 
   const handleReset = () => {
@@ -133,21 +169,6 @@ export default function ExperimentPage() {
             />
 
             <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <label className="text-sm font-semibold text-white">
-                  Number of Responses
-                </label>
-                <select
-                  value={responseCount}
-                  onChange={(e) => setResponseCount(Number(e.target.value))}
-                  className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#4A8FFF]"
-                >
-                  <option value={1}>1 Response</option>
-                  <option value={3}>3 Responses</option>
-                  <option value={5}>5 Responses</option>
-                </select>
-              </div>
-
               <Button
                 onClick={handleGenerate}
                 isLoading={isGenerating}
@@ -163,7 +184,7 @@ export default function ExperimentPage() {
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5" />
-                    Generate Responses
+                    Generate Response
                   </>
                 )}
               </Button>

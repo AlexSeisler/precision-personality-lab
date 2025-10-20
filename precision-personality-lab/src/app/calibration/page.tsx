@@ -10,6 +10,8 @@ import { useCalibrationStore } from '@/store/calibration-store';
 import { useUIStore } from '@/store/ui-store';
 import { quickCalibrationQuestions, deepCalibrationQuestions } from '@/lib/mock-data/calibration-questions';
 import { deriveParameterRanges, getCalibrationInsights } from '@/lib/utils/calibration';
+import { supabase } from '@/lib/supabase/client';
+import { logAuditEvent } from '@/lib/api/audit';
 import type { CalibrationAnswer } from '@/types';
 
 export default function CalibrationPage() {
@@ -25,6 +27,7 @@ export default function CalibrationPage() {
     setCalibrated,
     setCalibrationMode,
     setCurrentQuestionIndex,
+    setCalibrationId,
     resetCalibration,
   } = useCalibrationStore();
 
@@ -72,7 +75,7 @@ export default function CalibrationPage() {
     }
   };
 
-  const completeCalibration = () => {
+  const completeCalibration = async () => {
     const allAnswers = [...answers, {
       questionId: currentQuestion.id,
       answer: localAnswer,
@@ -81,8 +84,46 @@ export default function CalibrationPage() {
 
     const ranges = deriveParameterRanges(allAnswers);
     setParameterRanges(ranges);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: calibration, error } = await supabase
+          .from('calibrations')
+          .insert({
+            user_id: user.id,
+            answers: allAnswers,
+            temperature_min: ranges.temperature.min,
+            temperature_max: ranges.temperature.max,
+            top_p_min: ranges.topP.min,
+            top_p_max: ranges.topP.max,
+            max_tokens_min: ranges.maxTokens.min,
+            max_tokens_max: ranges.maxTokens.max,
+            frequency_penalty_min: ranges.frequencyPenalty.min,
+            frequency_penalty_max: ranges.frequencyPenalty.max,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Failed to save calibration:', error);
+          addToast('Calibration completed but failed to save', 'warning');
+        } else if (calibration) {
+          setCalibrationId(calibration.id);
+          await logAuditEvent('calibration_completed', {
+            calibration_id: calibration.id,
+            mode: calibrationMode,
+          });
+          addToast('Calibration complete! Your parameter ranges have been saved.', 'success');
+        }
+      }
+    } catch (error) {
+      console.error('Calibration save error:', error);
+      addToast('Calibration completed but failed to save', 'warning');
+    }
+
     setCalibrated(true);
-    addToast('Calibration complete! Your parameter ranges have been calculated.', 'success');
   };
 
   const handleRecalibrate = () => {
