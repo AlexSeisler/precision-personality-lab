@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { useUIStore } from '@/store/ui-store';
+import { logAuditEvent } from '@/lib/api/audit-logs';
 
 interface AuthContextType {
   user: User | null;
@@ -39,8 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' && session?.user) {
           addToast('Welcome back!', 'success');
+          logAuditEvent(session.user.id, 'sign_in', { email: session.user.email });
         } else if (event === 'SIGNED_OUT') {
           addToast('Signed out successfully', 'info');
         }
@@ -96,6 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      if (user) {
+        await logAuditEvent(user.id, 'sign_out');
+      }
       const { error } = await supabase.auth.signOut();
       if (error) {
         addToast(error.message, 'error');
