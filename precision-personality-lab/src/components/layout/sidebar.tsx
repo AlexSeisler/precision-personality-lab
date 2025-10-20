@@ -11,6 +11,7 @@ import {
   BarChart3,
   X,
   ChevronRight,
+  Archive,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/calibration", label: "Calibration", icon: Sliders },
   { href: "/experiment", label: "Experiment", icon: Flask },
+  { href: "/dashboard", label: "Dashboard", icon: Archive },
   { href: "/metrics", label: "Metrics", icon: BarChart3 },
 ];
 
