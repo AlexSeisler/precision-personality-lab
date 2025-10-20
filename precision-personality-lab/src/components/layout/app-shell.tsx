@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
+import { PageTransition } from "./page-transition";
 import { ToastContainer } from "@/components/ui/toast";
 
 interface AppShellProps {
@@ -47,9 +48,11 @@ export function AppShell({ children }: AppShellProps) {
           aria-label="Main content"
           className="relative flex flex-col items-center justify-start w-full min-h-[calc(100vh-4rem)]"
         >
-          {/* True centering wrapper */}
+          {/* True centering wrapper with page transitions */}
           <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 py-8 relative z-10">
-            {children}
+            <PageTransition>
+              {children}
+            </PageTransition>
           </div>
         </main>
       </div>

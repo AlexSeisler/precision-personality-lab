@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Download, FileJson, FileText, CheckCircle2 } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
@@ -20,6 +20,17 @@ export function ExportModal({ isOpen, onClose, responses }: ExportModalProps) {
   const { addToast } = useUIStore();
   const [selectedFormat, setSelectedFormat] = useState<'csv' | 'json'>('json');
   const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && isOpen && !isExporting) {
+        handleExport();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isOpen, isExporting, selectedFormat]);
 
   const handleExport = async () => {
     if (responses.length === 0) {

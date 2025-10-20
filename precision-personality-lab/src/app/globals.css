@@ -160,6 +160,88 @@ body {
   }
 }
 
+/* Ambient Glow Effects */
+.ambient-glow {
+  box-shadow: 0 0 80px rgba(74, 143, 255, 0.15),
+              0 0 120px rgba(255, 126, 71, 0.1);
+  animation: ambient-pulse 4s ease-in-out infinite;
+}
+
+.ambient-glow-hero {
+  box-shadow: 0 0 100px rgba(74, 143, 255, 0.25),
+              0 0 150px rgba(255, 126, 71, 0.15),
+              0 0 200px rgba(74, 143, 255, 0.1);
+  animation: ambient-pulse-hero 5s ease-in-out infinite;
+}
+
+@keyframes ambient-pulse {
+  0%, 100% {
+    box-shadow: 0 0 80px rgba(74, 143, 255, 0.15),
+                0 0 120px rgba(255, 126, 71, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 100px rgba(74, 143, 255, 0.25),
+                0 0 140px rgba(255, 126, 71, 0.15);
+  }
+}
+
+@keyframes ambient-pulse-hero {
+  0%, 100% {
+    box-shadow: 0 0 100px rgba(74, 143, 255, 0.25),
+                0 0 150px rgba(255, 126, 71, 0.15),
+                0 0 200px rgba(74, 143, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 120px rgba(74, 143, 255, 0.35),
+                0 0 180px rgba(255, 126, 71, 0.25),
+                0 0 220px rgba(74, 143, 255, 0.15);
+  }
+}
+
+/* Hover Card Effect */
+.hover-card {
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.hover-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(74, 143, 255, 0.2);
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+h3 {
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+}
+
+.subtext {
+  opacity: 0.8;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}
+
+p {
+  line-height: 1.65;
+}
+
+.tracking-wide {
+  letter-spacing: 0.025em;
+}
+
 .fade-in {
   animation: fade-in 0.3s ease-in-out;
 }

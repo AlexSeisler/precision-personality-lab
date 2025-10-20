@@ -236,7 +236,12 @@ export default function CalibrationPage() {
 }
 
 interface CalibrationResultsViewProps {
-  ranges: any;
+  ranges: {
+    temperature: { min: number; max: number };
+    topP: { min: number; max: number };
+    maxTokens: { min: number; max: number };
+    frequencyPenalty: { min: number; max: number };
+  };
   insights: string[];
   onRecalibrate: () => void;
   onProceed: () => void;
@@ -322,14 +327,30 @@ function CalibrationResultsView({ ranges, insights, onRecalibrate, onProceed }: 
           </Card>
 
           <div className="flex gap-4 justify-center">
-            <Button onClick={onProceed} size="lg">
-              Proceed to Experiment
-            </Button>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <Button
+                onClick={onProceed}
+                size="lg"
+                className="bg-gradient-to-r from-[#4A8FFF] to-[#FF7E47] text-white hover:brightness-110 transition-all shadow-[0_0_30px_rgba(74,143,255,0.3)]"
+              >
+                Proceed to Experiment →
+              </Button>
+            </motion.div>
 
-            <Button variant="secondary" onClick={onRecalibrate} size="lg">
-              <RefreshCw className="w-5 h-5" />
-              Recalibrate
-            </Button>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <Button variant="secondary" onClick={onRecalibrate} size="lg">
+                <RefreshCw className="w-5 h-5" />
+                Recalibrate
+              </Button>
+            </motion.div>
           </div>
         </motion.div>
       </div>

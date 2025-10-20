@@ -137,21 +137,25 @@ export default function MetricsPage() {
             label="Avg Creativity"
             value={avgMetrics.creativity}
             color="orange"
+            delay={0.1}
           />
           <MetricCard
             label="Avg Coherence"
             value={avgMetrics.coherence}
             color="blue"
+            delay={0.2}
           />
           <MetricCard
             label="Avg Structure"
             value={avgMetrics.structure}
             color="purple"
+            delay={0.3}
           />
           <MetricCard
             label="Avg Completeness"
             value={avgMetrics.completeness}
             color="blue"
+            delay={0.4}
           />
         </div>
 
@@ -313,9 +317,10 @@ interface MetricCardProps {
   label: string;
   value: number;
   color: 'blue' | 'orange' | 'purple';
+  delay?: number;
 }
 
-function MetricCard({ label, value, color }: MetricCardProps) {
+function MetricCard({ label, value, color, delay = 0 }: MetricCardProps) {
   const colorClasses = {
     blue: 'from-[#4A8FFF]/20 to-[#3A7FEF]/10 border-[#4A8FFF]/30',
     orange: 'from-[#FF7E47]/20 to-[#EF6E37]/10 border-[#FF7E47]/30',
@@ -323,9 +328,22 @@ function MetricCard({ label, value, color }: MetricCardProps) {
   };
 
   return (
-    <Card className={`p-4 bg-gradient-to-br ${colorClasses[color]}`}>
-      <p className="text-sm text-gray-400 mb-1">{label}</p>
-      <p className="text-3xl font-bold text-white">{value.toFixed(1)}</p>
-    </Card>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4 }}
+    >
+      <Card className={`p-4 bg-gradient-to-br ${colorClasses[color]} hover-card`}>
+        <p className="text-sm text-gray-400 mb-1">{label}</p>
+        <motion.p
+          className="text-3xl font-bold text-white"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: delay + 0.2, type: 'spring' }}
+        >
+          {value.toFixed(1)}
+        </motion.p>
+      </Card>
+    </motion.div>
   );
 }

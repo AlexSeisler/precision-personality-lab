@@ -1,18 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FlaskConical as Flask, Sparkles, Loader2, Download } from "lucide-react";
+import { FlaskConical, Sparkles, Loader2, Download, Sliders } from "lucide-react";
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PromptInput } from '@/components/features/prompt-input';
 import { ParameterControls } from '@/components/features/parameter-controls';
 import { ExportModal } from '@/components/features/export-modal';
 import { useExperimentStore } from '@/store/experiment-store';
+import { useCalibrationStore } from '@/store/calibration-store';
 import { useUIStore } from '@/store/ui-store';
 import { generateMultipleResponses } from '@/lib/mock-data/response-generator';
 
 export default function ExperimentPage() {
+  const router = useRouter();
   const {
     currentPrompt,
     currentParameters,
@@ -24,9 +27,28 @@ export default function ExperimentPage() {
     setGenerating,
   } = useExperimentStore();
 
+  const { isCalibrated, parameterRanges } = useCalibrationStore();
   const { addToast } = useUIStore();
   const [responseCount, setResponseCount] = useState(3);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [hasLoadedCalibration, setHasLoadedCalibration] = useState(false);
+
+  useEffect(() => {
+    if (isCalibrated && parameterRanges && !hasLoadedCalibration) {
+      const midTemp = (parameterRanges.temperature.min + parameterRanges.temperature.max) / 2;
+      const midTopP = (parameterRanges.topP.min + parameterRanges.topP.max) / 2;
+      const midTokens = Math.round((parameterRanges.maxTokens.min + parameterRanges.maxTokens.max) / 2);
+      const midFreq = (parameterRanges.frequencyPenalty.min + parameterRanges.frequencyPenalty.max) / 2;
+
+      setParameter('temperature', midTemp);
+      setParameter('topP', midTopP);
+      setParameter('maxTokens', midTokens);
+      setParameter('frequencyPenalty', midFreq);
+
+      setHasLoadedCalibration(true);
+      addToast('✨ Calibration settings loaded from previous session', 'info', 4000);
+    }
+  }, [isCalibrated, parameterRanges, hasLoadedCalibration, setParameter, addToast]);
 
   const handleGenerate = async () => {
     if (!currentPrompt.trim()) {
@@ -74,20 +96,31 @@ export default function ExperimentPage() {
             </div>
           </div>
 
-          {currentResponses.length > 0 && (
-            <div className="flex gap-2">
+          <div className="flex gap-2">
+            {isCalibrated && (
               <Button
-                variant="secondary"
-                onClick={() => setIsExportModalOpen(true)}
+                onClick={() => router.push('/calibration')}
+                className="bg-gradient-to-r from-[#4A8FFF] to-[#FF7E47] text-white hover:brightness-110 transition-all"
               >
-                <Download className="w-4 h-4" />
-                Export Data
+                <Sliders className="w-4 h-4" />
+                Recalibrate
               </Button>
-              <Button variant="ghost" onClick={handleReset}>
-                Reset Experiment
-              </Button>
-            </div>
-          )}
+            )}
+            {currentResponses.length > 0 && (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsExportModalOpen(true)}
+                >
+                  <Download className="w-4 h-4" />
+                  Export Data
+                </Button>
+                <Button variant="ghost" onClick={handleReset}>
+                  Reset Experiment
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
