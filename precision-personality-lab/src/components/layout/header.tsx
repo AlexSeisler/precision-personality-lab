@@ -1,7 +1,8 @@
 "use client";
 
-import { Menu, Sparkles } from "lucide-react";
+import { Menu, Sparkles, LogOut, User } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/lib/auth/auth-context";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -17,6 +18,8 @@ interface HeaderProps {
  */
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const { user, signOut } = useAuth();
+
   return (
     <header
       className="
@@ -75,19 +78,41 @@ export function Header({ onMenuClick }: HeaderProps) {
         </motion.div>
       </motion.div>
 
-      {/* Right: Status */}
-      <motion.div
-        className="
-          hidden md:flex items-center gap-2
-          px-4 py-2 rounded-lg
-          bg-white/5 border border-white/10 ml-auto
-        "
-        whileHover={{ backgroundColor: "rgba(255,255,255,0.08)" }}
-        transition={{ duration: 0.2 }}
-      >
-        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-        <span className="text-sm text-gray-300">System Active</span>
-      </motion.div>
+      {/* Right: User Status */}
+      <div className="ml-auto flex items-center gap-3">
+        {user && (
+          <>
+            <motion.div
+              className="
+                hidden md:flex items-center gap-2
+                px-4 py-2 rounded-lg
+                bg-white/5 border border-white/10
+              "
+              whileHover={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+              transition={{ duration: 0.2 }}
+            >
+              <User className="w-4 h-4 text-[#4A8FFF]" />
+              <span className="text-sm text-gray-300">{user.email}</span>
+            </motion.div>
+
+            <motion.button
+              onClick={signOut}
+              className="
+                flex items-center gap-2 px-4 py-2 rounded-lg
+                bg-white/5 border border-white/10
+                hover:bg-white/10 hover:border-[#FF7E47]/50
+                text-sm text-gray-300 hover:text-white
+                transition-all
+              "
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </motion.button>
+          </>
+        )}
+      </div>
     </header>
   );
 }

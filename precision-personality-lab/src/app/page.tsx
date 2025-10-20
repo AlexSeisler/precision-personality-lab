@@ -5,10 +5,26 @@ import Link from 'next/link';
 import { Sparkles, Sliders, FlaskConical, BarChart3, ArrowRight, Zap, Target, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Flask } from "lucide-react";
-
+import { AuthForm } from '@/components/auth/auth-form';
+import { useAuth } from '@/lib/auth/auth-context';
 
 export default function Home() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#4A8FFF] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm />;
+  }
   return (
     <div className="w-full">
       <section className="relative py-20 lg:py-32">
