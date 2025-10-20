@@ -115,7 +115,7 @@ export default function CalibrationPage() {
   }
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="w-full">
       <div className="px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -249,7 +249,7 @@ interface CalibrationResultsViewProps {
 
 function CalibrationResultsView({ ranges, insights, onRecalibrate, onProceed }: CalibrationResultsViewProps) {
   return (
-    <div className="min-h-screen py-8">
+    <div className="w-full">
       <div className="px-6 md:px-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}

@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { Sparkles, Sliders, FlaskConical, BarChart3, ArrowRight, Zap, Target, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Flask } from "lucide-react";
+
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
+    <div className="w-full">
       <section className="relative py-20 lg:py-32">
         <div className="px-6 md:px-8">
           <motion.div

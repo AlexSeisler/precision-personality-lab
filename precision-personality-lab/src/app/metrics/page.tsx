@@ -103,7 +103,7 @@ export default function MetricsPage() {
   };
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="w-full">
       <div className="px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">

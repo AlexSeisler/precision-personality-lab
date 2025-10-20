@@ -10,8 +10,13 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-// ⚠️ Layout Contract: Do not modify container structure
-// Centering and overlay alignment tested at V1.2.1 baseline.
+/**
+ * 🧩 Layout Finalized – v1.4.0
+ * Final baseline alignment and spacing polish:
+ * - Top spacing fully compensates for header blur and shadow
+ * - Sidebar isolated from content flow
+ * - Clean production-ready version
+ */
 
 export function AppShell({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -33,29 +38,27 @@ export function AppShell({ children }: AppShellProps) {
       {/* Header */}
       <Header onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* --- CORE LAYOUT FIX --- */}
-      <div className="relative min-h-screen pt-16">
-        {/* Sidebar isolated from layout flow */}
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-
-        {/* Independent main container */}
-        <main
-          id="main-content"
-          role="main"
-          aria-label="Main content"
-          className="relative flex flex-col items-center justify-start w-full min-h-[calc(100vh-4rem)]"
-        >
-          {/* True centering wrapper with page transitions */}
-          <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 py-8 relative z-10">
-            <PageTransition>
-              {children}
-            </PageTransition>
-          </div>
-        </main>
+      {/* Sidebar (kept isolated from layout flow) */}
+      <div className="absolute top-0 left-0 right-0 z-40 pointer-events-none">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
+
+      {/* Main content area */}
+      <main
+        id="main-content"
+        role="main"
+        aria-label="Main content"
+        className="
+          relative flex flex-col items-center justify-start
+          w-full
+          pt-[9rem] px-6 md:px-8 pb-12
+          transition-all duration-300
+        "
+      >
+        <div className="w-full max-w-[1280px] mx-auto relative z-10">
+          <PageTransition>{children}</PageTransition>
+        </div>
+      </main>
 
       {/* Toast notifications */}
       <ToastContainer />

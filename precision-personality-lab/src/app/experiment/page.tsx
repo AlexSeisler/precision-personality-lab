@@ -14,6 +14,7 @@ import { useCalibrationStore } from '@/store/calibration-store';
 import { useUIStore } from '@/store/ui-store';
 import { generateMultipleResponses } from '@/lib/mock-data/response-generator';
 
+
 export default function ExperimentPage() {
   const router = useRouter();
   const {
@@ -79,12 +80,12 @@ export default function ExperimentPage() {
   };
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="w-full">
       <div className="px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#FF7E47]/20 to-[#EF6E37]/10 border border-[#FF7E47]/30">
-              <Flask className="w-6 h-6 text-[#FF7E47]" />
+              <FlaskConical className="w-6 h-6 text-[#FF7E47]" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white glow-orange">
