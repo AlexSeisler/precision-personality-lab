@@ -1,24 +1,29 @@
 "use client";
 
-import { Menu, Sparkles, LogOut, User } from "lucide-react";
+import { Menu, Sparkles, LogOut, User, Archive } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useUIStore } from "@/store/ui-store";
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
-/**
- * 🧩 Header Visual Fix – V1.3.9
- * Restores correct vertical padding and optical balance without affecting layout height.
- * Adjustments:
- *  - Increased internal padding (py-3 → 48px content height)
- *  - Reduced header height to auto-fit content (min-h-[64px])
- *  - Ensured text never clips inside blur backdrop
- */
-
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, signOut } = useAuth();
+  const pathname = usePathname();
+  const { isRealtimeConnected, lastSyncTime } = useUIStore();
+
+  const formatSyncTime = (time: number | null) => {
+    if (!time) return "Never";
+    const diff = Date.now() - time;
+    const seconds = Math.floor(diff / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}m ago`;
+  };
 
   return (
     <header
@@ -78,10 +83,66 @@ export function Header({ onMenuClick }: HeaderProps) {
         </motion.div>
       </motion.div>
 
-      {/* Right: User Status */}
+      {/* Center: Navigation */}
+      {user && (
+        <nav className="hidden md:flex items-center gap-1 ml-8">
+          <Link
+            href="/dashboard"
+            className={
+              `flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+                pathname === "/dashboard"
+                  ? "bg-[#4A8FFF]/20 border border-[#4A8FFF]/50 text-[#4A8FFF]"
+                  : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
+              }`
+            }
+          >
+            <Archive className="w-4 h-4" />
+            <span>Dashboard</span>
+          </Link>
+        </nav>
+      )}
+
+      {/* Right: Status & User */}
       <div className="ml-auto flex items-center gap-3">
         {user && (
           <>
+            {/* Realtime Status Indicator */}
+            <motion.div
+              className="
+                hidden lg:flex flex-col items-end gap-0.5
+                px-3 py-1.5 rounded-lg
+                bg-black/40 border border-white/10
+              "
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center gap-2">
+                <motion.span
+                  className={
+                    `text-xs font-medium ${
+                      isRealtimeConnected ? "text-green-400" : "text-red-400"
+                    }`
+                  }
+                  animate={{
+                    scale: isRealtimeConnected ? [1, 1.2, 1] : 1,
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: isRealtimeConnected ? Infinity : 0,
+                  }}
+                >
+                  ●
+                </motion.span>
+                <span className="text-xs font-medium text-gray-300">
+                  {isRealtimeConnected ? "Live" : "Offline"}
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-500">
+                Last sync: {formatSyncTime(lastSyncTime)}
+              </p>
+            </motion.div>
+
             <motion.div
               className="
                 hidden md:flex items-center gap-2

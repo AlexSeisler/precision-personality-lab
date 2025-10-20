@@ -149,3 +149,82 @@ export async function saveExperiment(id: string): Promise<void> {
     throw error;
   }
 }
+
+export async function exportFullUserData(): Promise<string | null> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error('No authenticated user');
+    }
+
+    const [experimentsResult, analyticsResult, auditsResult] = await Promise.all([
+      supabase
+        .from('experiments')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('analytics_summaries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('audit_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(500),
+    ]);
+
+    if (experimentsResult.error) throw experimentsResult.error;
+    if (analyticsResult.error) throw analyticsResult.error;
+    if (auditsResult.error) throw auditsResult.error;
+
+    const fullExport = {
+      export_timestamp: new Date().toISOString(),
+      user_id: user.id,
+      user_email: user.email,
+      data: {
+        experiments: experimentsResult.data || [],
+        analytics_summaries: analyticsResult.data || [],
+        audit_logs: auditsResult.data || [],
+      },
+      metadata: {
+        experiments_count: experimentsResult.data?.length || 0,
+        analytics_count: analyticsResult.data?.length || 0,
+        audit_logs_count: auditsResult.data?.length || 0,
+      },
+    };
+
+    const content = JSON.stringify(fullExport, null, 2);
+    const blob = new Blob([content], { type: 'application/json' });
+    const fileName = `precision-lab-full-export-${user.id.slice(0, 8)}-${Date.now()}.json`;
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    await logAuditEvent('data_exported_full', {
+      format: 'json',
+      experiments_count: fullExport.metadata.experiments_count,
+      analytics_count: fullExport.metadata.analytics_count,
+      audit_logs_count: fullExport.metadata.audit_logs_count,
+      file_name: fileName,
+    });
+
+    return fileName;
+  } catch (error) {
+    console.error('Full export failed:', error);
+    const err = error as Error;
+    await logAuditEvent('data_exported_full', { error: err.message });
+    throw error;
+  }
+}

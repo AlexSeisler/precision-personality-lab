@@ -7,12 +7,12 @@ import { useMetricsStore } from '@/store/metrics-store';
 import { logAuditEvent } from '@/lib/api/audit';
 
 export function useRealtimeCalibrations(
-  onInsert?: (payload: any) => void,
-  onUpdate?: (payload: any) => void,
-  onDelete?: (payload: any) => void
+  onInsert?: (payload: unknown) => void,
+  onUpdate?: (payload: unknown) => void,
+  onDelete?: (payload: unknown) => void
 ) {
   const { user } = useAuth();
-  const { addToast } = useUIStore();
+  const { addToast, setRealtimeConnected, updateLastSyncTime } = useUIStore();
 
   useEffect(() => {
     if (!user) return;
@@ -67,17 +67,22 @@ export function useRealtimeCalibrations(
               channel: 'calibrations',
               message: err.message
             });
+            setRealtimeConnected(false);
             addToast('Connection error', 'error', 3000);
           }
           if (status === 'SUBSCRIBED') {
             await logAuditEvent('realtime_connected', {
               channel: 'calibrations',
             });
+            setRealtimeConnected(true);
+            updateLastSyncTime();
+            addToast('Realtime sync active', 'success', 1500);
           }
           if (status === 'CLOSED') {
             await logAuditEvent('realtime_disconnected', {
               channel: 'calibrations',
             });
+            setRealtimeConnected(false);
           }
         });
     };
@@ -86,10 +91,11 @@ export function useRealtimeCalibrations(
 
     const handleOnline = () => {
       setupChannel();
-      addToast('Back online - reconnecting', 'info', 2000);
+      addToast('Back online - reconnecting 🔁', 'info', 2000);
     };
 
     const handleOffline = () => {
+      setRealtimeConnected(false);
       logAuditEvent('realtime_disconnected', {
         channel: 'calibrations',
         reason: 'offline'
@@ -106,16 +112,16 @@ export function useRealtimeCalibrations(
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [user, onInsert, onUpdate, onDelete, addToast]);
+  }, [user, onInsert, onUpdate, onDelete, addToast, setRealtimeConnected, updateLastSyncTime]);
 }
 
 export function useRealtimeExperiments(
-  onInsert?: (payload: any) => void,
-  onUpdate?: (payload: any) => void,
-  onDelete?: (payload: any) => void
+  onInsert?: (payload: unknown) => void,
+  onUpdate?: (payload: unknown) => void,
+  onDelete?: (payload: unknown) => void
 ) {
   const { user } = useAuth();
-  const { addToast } = useUIStore();
+  const { addToast, setRealtimeConnected, updateLastSyncTime } = useUIStore();
   const { computeSummary } = useMetricsStore();
 
   useEffect(() => {
@@ -139,8 +145,10 @@ export function useRealtimeExperiments(
 
             if (payload.new?.responses && Array.isArray(payload.new.responses)) {
               await computeSummary(payload.new.responses, payload.new.calibration_id);
+              addToast('Analytics updated ✨', 'success', 2000);
             }
 
+            updateLastSyncTime();
             onInsert?.(payload);
             addToast('🧪 New experiment synced', 'success', 2000);
           }
@@ -176,17 +184,21 @@ export function useRealtimeExperiments(
               channel: 'experiments',
               message: err.message
             });
-            addToast('Connection error', 'error', 3000);
+            setRealtimeConnected(false);
+            addToast('Connection lost - retrying...', 'error', 3000);
           }
           if (status === 'SUBSCRIBED') {
             await logAuditEvent('realtime_connected', {
               channel: 'experiments',
             });
+            setRealtimeConnected(true);
+            updateLastSyncTime();
           }
           if (status === 'CLOSED') {
             await logAuditEvent('realtime_disconnected', {
               channel: 'experiments',
             });
+            setRealtimeConnected(false);
           }
         });
     };
@@ -195,10 +207,11 @@ export function useRealtimeExperiments(
 
     const handleOnline = () => {
       setupChannel();
-      addToast('Back online - reconnecting', 'info', 2000);
+      addToast('Back online - reconnecting 🔁', 'info', 2000);
     };
 
     const handleOffline = () => {
+      setRealtimeConnected(false);
       logAuditEvent('realtime_disconnected', {
         channel: 'experiments',
         reason: 'offline'
@@ -215,5 +228,5 @@ export function useRealtimeExperiments(
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [user, onInsert, onUpdate, onDelete, addToast, computeSummary]);
+  }, [user, onInsert, onUpdate, onDelete, addToast, setRealtimeConnected, updateLastSyncTime, computeSummary]);
 }

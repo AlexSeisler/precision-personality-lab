@@ -18,7 +18,7 @@ import { useDashboardStore } from '@/store/dashboard-store';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useUIStore } from '@/store/ui-store';
 import { supabase } from '@/lib/supabase/client';
-import { exportUserData, discardExperiment, saveExperiment } from '@/lib/api/exports';
+import { exportUserData, exportFullUserData, discardExperiment, saveExperiment } from '@/lib/api/exports';
 import { getAllCalibrations } from '@/lib/api/calibrations';
 import { useRealtimeExperiments } from '@/lib/realtime/hooks';
 import type { Database } from '@/lib/supabase/types';
@@ -104,6 +104,18 @@ export default function DashboardPage() {
     }
   };
 
+  const handleFullExport = async () => {
+    setIsExporting(true);
+    try {
+      const fileName = await exportFullUserData();
+      addToast(`Full export complete: ${fileName}`, 'success', 3000);
+    } catch (error) {
+      addToast('Full export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDiscard = async (id: string) => {
     try {
       await discardExperiment(id);
@@ -162,6 +174,15 @@ export default function DashboardPage() {
               >
                 <Filter className="w-4 h-4" />
                 Filters
+              </Button>
+              <Button
+                onClick={handleFullExport}
+                isLoading={isExporting}
+                disabled={isExporting}
+                className="bg-gradient-to-r from-[#4A8FFF] to-[#7B68EE] hover:opacity-90"
+              >
+                <Download className="w-4 h-4" />
+                Full Export
               </Button>
               <Button
                 onClick={() => handleExport('csv')}

@@ -6,12 +6,16 @@ interface UIState {
   isExportModalOpen: boolean;
   isRecalibrateModalOpen: boolean;
   exportFormat: 'csv' | 'json';
+  isRealtimeConnected: boolean;
+  lastSyncTime: number | null;
 
   addToast: (message: string, type?: Toast['type'], duration?: number) => void;
   removeToast: (id: string) => void;
   setExportModalOpen: (open: boolean) => void;
   setRecalibrateModalOpen: (open: boolean) => void;
   setExportFormat: (format: 'csv' | 'json') => void;
+  setRealtimeConnected: (connected: boolean) => void;
+  updateLastSyncTime: () => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -19,6 +23,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   isExportModalOpen: false,
   isRecalibrateModalOpen: false,
   exportFormat: 'json',
+  isRealtimeConnected: false,
+  lastSyncTime: null,
 
   addToast: (message, type = 'info', duration = 3000) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
@@ -42,4 +48,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   setRecalibrateModalOpen: (open) => set({ isRecalibrateModalOpen: open }),
 
   setExportFormat: (format) => set({ exportFormat: format }),
+
+  setRealtimeConnected: (connected) => set({ isRealtimeConnected: connected }),
+
+  updateLastSyncTime: () => set({ lastSyncTime: Date.now() }),
 }));

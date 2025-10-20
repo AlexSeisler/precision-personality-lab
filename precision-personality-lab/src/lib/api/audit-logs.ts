@@ -14,7 +14,10 @@ export type AuditEventType =
   | 'experiment_deleted'
   | 'experiment_generated'
   | 'experiment_inserted'
+  | 'experiment_saved'
+  | 'experiment_discarded'
   | 'data_exported'
+  | 'data_exported_full'
   | 'settings_changed'
   | 'session_restored'
   | 'realtime_connected'
@@ -23,9 +26,14 @@ export type AuditEventType =
   | 'analytics_updated'
   | 'analytics_computed';
 
+function generateCorrelationId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
 export async function logAuditEvent(
   eventType: AuditEventType,
-  eventData: Record<string, any> = {}
+  eventData: Record<string, unknown> = {},
+  source: 'client' | 'server' = 'client'
 ) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -35,12 +43,19 @@ export async function logAuditEvent(
       return;
     }
 
+    const correlation_id = generateCorrelationId();
+
     const { error } = await supabase
       .from('audit_logs')
       .insert({
         user_id: user.id,
         event_type: eventType,
-        event_data: eventData,
+        event_data: {
+          ...eventData,
+          correlation_id,
+          source,
+          timestamp: new Date().toISOString(),
+        },
       });
 
     if (error) {
