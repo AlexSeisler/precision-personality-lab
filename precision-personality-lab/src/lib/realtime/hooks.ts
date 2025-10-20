@@ -29,7 +29,8 @@ export function useRealtimeCalibrations(
             table: 'calibrations',
             filter: `user_id=eq.${user.id}`,
           },
-          (payload) => {
+          async (payload) => {
+            await logAuditEvent('experiment_inserted', { record: payload.new });
             onInsert?.(payload);
             addToast('✨ Calibration synced', 'info', 2000);
           }
@@ -59,9 +60,21 @@ export function useRealtimeCalibrations(
             onDelete?.(payload);
           }
         )
-        .subscribe((status) => {
+        .subscribe(async (status, err) => {
+          if (err) {
+            await logAuditEvent('realtime_error', {
+              channel: 'calibrations',
+              message: err.message
+            });
+            addToast('Connection error', 'error', 3000);
+          }
           if (status === 'SUBSCRIBED') {
-            logAuditEvent(user.id, 'realtime_connected', {
+            await logAuditEvent('realtime_connected', {
+              channel: 'calibrations',
+            });
+          }
+          if (status === 'CLOSED') {
+            await logAuditEvent('realtime_disconnected', {
               channel: 'calibrations',
             });
           }
@@ -70,13 +83,27 @@ export function useRealtimeCalibrations(
 
     setupChannel();
 
+    const handleOnline = () => {
+      setupChannel();
+      addToast('Back online - reconnecting', 'info', 2000);
+    };
+
+    const handleOffline = () => {
+      logAuditEvent('realtime_disconnected', {
+        channel: 'calibrations',
+        reason: 'offline'
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     return () => {
       if (channel) {
         supabase.removeChannel(channel);
-        logAuditEvent(user.id, 'realtime_disconnected', {
-          channel: 'calibrations',
-        });
       }
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [user, onInsert, onUpdate, onDelete, addToast]);
 }
@@ -105,7 +132,8 @@ export function useRealtimeExperiments(
             table: 'experiments',
             filter: `user_id=eq.${user.id}`,
           },
-          (payload) => {
+          async (payload) => {
+            await logAuditEvent('experiment_inserted', { record: payload.new });
             onInsert?.(payload);
             addToast('🧪 New experiment synced', 'success', 2000);
           }
@@ -118,7 +146,8 @@ export function useRealtimeExperiments(
             table: 'experiments',
             filter: `user_id=eq.${user.id}`,
           },
-          (payload) => {
+          async (payload) => {
+            await logAuditEvent('experiment_updated', { record: payload.new });
             onUpdate?.(payload);
           }
         )
@@ -134,9 +163,21 @@ export function useRealtimeExperiments(
             onDelete?.(payload);
           }
         )
-        .subscribe((status) => {
+        .subscribe(async (status, err) => {
+          if (err) {
+            await logAuditEvent('realtime_error', {
+              channel: 'experiments',
+              message: err.message
+            });
+            addToast('Connection error', 'error', 3000);
+          }
           if (status === 'SUBSCRIBED') {
-            logAuditEvent(user.id, 'realtime_connected', {
+            await logAuditEvent('realtime_connected', {
+              channel: 'experiments',
+            });
+          }
+          if (status === 'CLOSED') {
+            await logAuditEvent('realtime_disconnected', {
               channel: 'experiments',
             });
           }
@@ -145,13 +186,27 @@ export function useRealtimeExperiments(
 
     setupChannel();
 
+    const handleOnline = () => {
+      setupChannel();
+      addToast('Back online - reconnecting', 'info', 2000);
+    };
+
+    const handleOffline = () => {
+      logAuditEvent('realtime_disconnected', {
+        channel: 'experiments',
+        reason: 'offline'
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     return () => {
       if (channel) {
         supabase.removeChannel(channel);
-        logAuditEvent(user.id, 'realtime_disconnected', {
-          channel: 'experiments',
-        });
       }
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [user, onInsert, onUpdate, onDelete, addToast]);
 }

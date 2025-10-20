@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import { logAuditEvent } from '@/lib/api/audit-logs';
 import type { Database } from '@/lib/supabase/types';
 import type { CalibrationAnswer, ParameterRange } from '@/types';
 
@@ -6,39 +7,66 @@ type CalibrationRow = Database['public']['Tables']['calibrations']['Row'];
 type CalibrationInsert = Database['public']['Tables']['calibrations']['Insert'];
 
 export async function saveCalibration(
-  userId: string,
   mode: 'quick' | 'deep',
   answers: CalibrationAnswer[],
   ranges: ParameterRange,
   insights: string[]
 ) {
-  const calibrationData: CalibrationInsert = {
-    user_id: userId,
-    mode,
-    answers: answers.map((a) => ({
-      questionId: a.questionId,
-      answer: a.answer,
-      weight: a.weight,
-    })),
-    temperature_min: ranges.temperature.min,
-    temperature_max: ranges.temperature.max,
-    top_p_min: ranges.topP.min,
-    top_p_max: ranges.topP.max,
-    max_tokens_min: ranges.maxTokens.min,
-    max_tokens_max: ranges.maxTokens.max,
-    frequency_penalty_min: ranges.frequencyPenalty.min,
-    frequency_penalty_max: ranges.frequencyPenalty.max,
-    insights,
-  };
+  try {
+    await logAuditEvent('calibration_started', { mode });
 
-  const { data, error } = await supabase
-    .from('calibrations')
-    .insert(calibrationData)
-    .select()
-    .single();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (error) throw error;
-  return data;
+    if (!user) {
+      throw new Error('No authenticated user');
+    }
+
+    const calibrationData: CalibrationInsert = {
+      user_id: user.id,
+      mode,
+      answers: answers.map((a) => ({
+        questionId: a.questionId,
+        answer: a.answer,
+        weight: a.weight,
+      })),
+      temperature_min: ranges.temperature.min,
+      temperature_max: ranges.temperature.max,
+      top_p_min: ranges.topP.min,
+      top_p_max: ranges.topP.max,
+      max_tokens_min: ranges.maxTokens.min,
+      max_tokens_max: ranges.maxTokens.max,
+      frequency_penalty_min: ranges.frequencyPenalty.min,
+      frequency_penalty_max: ranges.frequencyPenalty.max,
+      insights,
+    };
+
+    const { data, error } = await supabase
+      .from('calibrations')
+      .insert(calibrationData)
+      .select()
+      .single();
+
+    if (error) {
+      await logAuditEvent('calibration_failed', {
+        mode,
+        error: error.message
+      });
+      throw error;
+    }
+
+    await logAuditEvent('calibration_completed', {
+      calibration_id: data.id,
+      mode
+    });
+
+    return data;
+  } catch (error) {
+    await logAuditEvent('calibration_failed', {
+      mode,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    throw error;
+  }
 }
 
 export async function getLatestCalibration(userId: string): Promise<{
@@ -90,10 +118,18 @@ export async function getAllCalibrations(userId: string): Promise<CalibrationRow
 }
 
 export async function deleteCalibration(calibrationId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('No authenticated user');
+  }
+
   const { error } = await supabase
     .from('calibrations')
     .delete()
     .eq('id', calibrationId);
 
   if (error) throw error;
+
+  await logAuditEvent('calibration_deleted', { calibration_id: calibrationId });
 }
