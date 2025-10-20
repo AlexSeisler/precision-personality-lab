@@ -29,8 +29,8 @@ export default function MetricsPage() {
 
   if (currentResponses.length === 0) {
     return (
-      <div className="p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="py-8">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-8">
           <div className="flex items-center gap-4 mb-8">
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30">
               <BarChart3 className="w-6 h-6 text-purple-400" />
@@ -103,8 +103,8 @@ export default function MetricsPage() {
   };
 
   return (
-    <div className="p-8 min-h-screen">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen py-8">
+      <div className="max-w-[1280px] mx-auto px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30">
@@ -155,11 +155,21 @@ export default function MetricsPage() {
           />
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-white mb-6">
-              Metrics Comparison
-            </h2>
+        <motion.div
+          className="grid lg:grid-cols-2 gap-6 mb-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, staggerChildren: 0.1 }}
+        >
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="p-6">
+              <h2 className="text-xl font-bold text-white mb-6">
+                Metrics Comparison
+              </h2>
             <ResponsiveContainer width="100%" height={350}>
               <RadarChart data={radarData[0] ? [radarData[0]] : radarData}>
                 <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
@@ -196,12 +206,18 @@ export default function MetricsPage() {
                 <Legend wrapperStyle={{ color: '#fff' }} />
               </RadarChart>
             </ResponsiveContainer>
-          </Card>
+            </Card>
+          </motion.div>
 
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-white mb-6">
-              Parameter Impact
-            </h2>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="p-6">
+              <h2 className="text-xl font-bold text-white mb-6">
+                Parameter Impact
+              </h2>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={barData}>
                 <CartesianGrid
@@ -223,8 +239,9 @@ export default function MetricsPage() {
                 <Bar dataKey="Coherence" fill="#4A8FFF" />
               </BarChart>
             </ResponsiveContainer>
-          </Card>
-        </div>
+            </Card>
+          </motion.div>
+        </motion.div>
 
         <Card className="p-6">
           <h2 className="text-xl font-bold text-white mb-4">

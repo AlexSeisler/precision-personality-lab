@@ -18,7 +18,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     };
 
     const hoverClasses = hoverable
-      ? 'hover:scale-[1.02] hover:shadow-2xl cursor-pointer'
+      ? 'hover:shadow-2xl hover:shadow-[#4A8FFF]/10 cursor-pointer'
       : '';
 
     return (
@@ -26,6 +26,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        whileHover={hoverable ? { scale: 1.02, y: -4 } : {}}
+        transition={{ duration: 0.15, ease: 'easeOut' }}
         className={`${baseClasses} ${variantClasses[variant]} ${hoverClasses} ${className}`}
         {...props}
       >
