@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Flask, Sparkles, Loader2 } from 'lucide-react';
+import { Flask, Sparkles, Loader2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PromptInput } from '@/components/features/prompt-input';
 import { ParameterControls } from '@/components/features/parameter-controls';
+import { ExportModal } from '@/components/features/export-modal';
 import { useExperimentStore } from '@/store/experiment-store';
 import { useUIStore } from '@/store/ui-store';
 import { generateMultipleResponses } from '@/lib/mock-data/response-generator';
@@ -25,6 +26,7 @@ export default function ExperimentPage() {
 
   const { addToast } = useUIStore();
   const [responseCount, setResponseCount] = useState(3);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const handleGenerate = async () => {
     if (!currentPrompt.trim()) {
@@ -55,8 +57,8 @@ export default function ExperimentPage() {
   };
 
   return (
-    <div className="p-8 min-h-screen">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen py-8">
+      <div className="max-w-[1280px] mx-auto px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#FF7E47]/20 to-[#EF6E37]/10 border border-[#FF7E47]/30">
@@ -73,9 +75,18 @@ export default function ExperimentPage() {
           </div>
 
           {currentResponses.length > 0 && (
-            <Button variant="ghost" onClick={handleReset}>
-              Reset Experiment
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => setIsExportModalOpen(true)}
+              >
+                <Download className="w-4 h-4" />
+                Export Data
+              </Button>
+              <Button variant="ghost" onClick={handleReset}>
+                Reset Experiment
+              </Button>
+            </div>
           )}
         </div>
 
@@ -158,6 +169,12 @@ export default function ExperimentPage() {
           </div>
         </div>
       </div>
+
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        responses={currentResponses}
+      />
     </div>
   );
 }

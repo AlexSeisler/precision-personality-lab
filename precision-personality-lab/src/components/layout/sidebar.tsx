@@ -78,19 +78,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               const Icon = item.icon;
 
               return (
-                <Link key={item.href} href={item.href} onClick={onClose}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  aria-label={`Navigate to ${item.label}`}
+                  aria-current={isActive ? 'page' : undefined}
+                >
                   <motion.div
                     className={`
                       relative flex items-center gap-3 px-4 py-3 rounded-lg
-                      transition-colors cursor-pointer group
+                      transition-all duration-200 cursor-pointer group
                       ${
                         isActive
-                          ? "bg-[#4A8FFF]/20 text-[#4A8FFF] border border-[#4A8FFF]/30"
-                          : "text-gray-300 hover:bg-white/5 hover:text-white border border-transparent"
+                          ? "bg-[#4A8FFF]/20 text-[#4A8FFF] border border-[#4A8FFF]/40 shadow-[0_0_20px_rgba(74,143,255,0.2)]"
+                          : "text-gray-300 hover:bg-white/5 hover:text-white border border-transparent hover:border-white/10"
                       }
                     `}
-                    whileHover={{ x: 4 }}
+                    whileHover={{ x: 4, scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     {isActive && (
                       <motion.div

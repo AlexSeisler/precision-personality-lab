@@ -179,3 +179,66 @@ body {
     opacity: 0;
   }
 }
+
+.focus-ring {
+  outline: 2px solid rgba(74, 143, 255, 0.5);
+  outline-offset: 2px;
+}
+
+*:focus-visible {
+  outline: 2px solid rgba(74, 143, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(74, 143, 255, 0.8);
+  outline-offset: 2px;
+}
+
+.glass-deep {
+  background: rgba(17, 18, 22, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.37),
+    inset 0 0 0.5px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.hover-lift {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+.interactive-glow {
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.interactive-glow:hover {
+  box-shadow: 0 0 20px rgba(74, 143, 255, 0.4);
+}
+
+.interactive-glow:active {
+  box-shadow: 0 0 30px rgba(74, 143, 255, 0.6);
+}
