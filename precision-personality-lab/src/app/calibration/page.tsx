@@ -98,7 +98,7 @@ export default function CalibrationPage() {
   if (!currentQuestion && !isCalibrated) {
     return (
       <div className="py-8">
-        <div className="max-w-[1280px] mx-auto px-6 md:px-8 text-center">
+        <div className="px-6 md:px-8 text-center">
           <p className="text-gray-400">Loading calibration...</p>
         </div>
       </div>
@@ -116,7 +116,7 @@ export default function CalibrationPage() {
 
   return (
     <div className="min-h-screen py-8">
-      <div className="max-w-[1280px] mx-auto px-6 md:px-8">
+      <div className="px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#4A8FFF]/20 to-[#3A7FEF]/10 border border-[#4A8FFF]/30">
@@ -245,7 +245,7 @@ interface CalibrationResultsViewProps {
 function CalibrationResultsView({ ranges, insights, onRecalibrate, onProceed }: CalibrationResultsViewProps) {
   return (
     <div className="min-h-screen py-8">
-      <div className="max-w-[1280px] mx-auto px-6 md:px-8">
+      <div className="px-6 md:px-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}

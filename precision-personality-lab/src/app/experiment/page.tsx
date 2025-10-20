@@ -58,7 +58,7 @@ export default function ExperimentPage() {
 
   return (
     <div className="min-h-screen py-8">
-      <div className="max-w-[1280px] mx-auto px-6 md:px-8">
+      <div className="px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#FF7E47]/20 to-[#EF6E37]/10 border border-[#FF7E47]/30">

@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <section className="relative py-20 lg:py-32">
-        <div className="max-w-[1280px] mx-auto px-6 md:px-8">
+        <div className="px-6 md:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

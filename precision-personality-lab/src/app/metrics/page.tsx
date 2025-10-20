@@ -30,7 +30,7 @@ export default function MetricsPage() {
   if (currentResponses.length === 0) {
     return (
       <div className="py-8">
-        <div className="max-w-[1280px] mx-auto px-6 md:px-8">
+        <div className="px-6 md:px-8">
           <div className="flex items-center gap-4 mb-8">
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30">
               <BarChart3 className="w-6 h-6 text-purple-400" />
@@ -104,7 +104,7 @@ export default function MetricsPage() {
 
   return (
     <div className="min-h-screen py-8">
-      <div className="max-w-[1280px] mx-auto px-6 md:px-8">
+      <div className="px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30">
