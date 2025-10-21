@@ -53,67 +53,93 @@ export default function ExperimentPage() {
     }
   }, [isCalibrated, parameterRanges, hasLoadedCalibration, setParameter, addToast]);
 
-  const handleGenerate = async () => {
-    if (!currentPrompt.trim()) {
-      addToast('Please enter a prompt before generating', 'warning');
-      return;
-    }
+const handleGenerate = async () => {
+  if (!currentPrompt.trim()) {
+    addToast('Please enter a prompt before generating', 'warning');
+    return;
+  }
 
-    if (!currentCalibrationId) {
-      addToast('No calibration found. Please complete calibration first.', 'error');
-      router.push('/calibration');
-      return;
-    }
+  if (!currentCalibrationId) {
+    addToast('No calibration found. Please complete calibration first.', 'error');
+    router.push('/calibration');
+    return;
+  }
 
-    setGenerating(true);
-    addToast('Generating response...', 'info');
+  setGenerating(true);
+  addToast('Generating response...', 'info');
 
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session) {
-        addToast('Authentication required', 'error');
-        setGenerating(false);
-        return;
-      }
-
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          prompt: currentPrompt,
-          calibrationId: currentCalibrationId,
-          parameters: currentParameters,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate response');
-      }
-
-      if (data.experiment?.responses) {
-        setResponses(data.experiment.responses);
-        await computeSummary(data.experiment.responses, currentCalibrationId);
-        addToast('Response generated successfully!', 'success');
-      }
-    } catch (error) {
-      console.error('Generation error:', error);
-      addToast(error instanceof Error ? error.message : 'Failed to generate response', 'error');
-    } finally {
+    if (!session) {
+      addToast('Authentication required', 'error');
       setGenerating(false);
+      return;
     }
-  };
+
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        prompt: currentPrompt,
+        calibrationId: currentCalibrationId,
+        parameters: currentParameters,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData?.message || `Generation failed: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let fullText = '';
+
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+      }
+    }
+
+    // Extract the last valid JSON block from the streamed data
+    const lines = fullText.split('\n').filter(Boolean);
+    const lastJson = lines.reverse().find(line => line.trim().startsWith('{') && line.trim().endsWith('}'));
+    if (!lastJson) throw new Error('No valid JSON found in stream.');
+
+    const data = JSON.parse(lastJson);
+
+    if (data.experiment?.responses) {
+      setResponses(data.experiment.responses);
+      await computeSummary(data.experiment.responses, currentCalibrationId);
+      addToast('Response generated successfully!', 'success');
+    } else {
+      addToast('No responses found in generated data.', 'warning');
+    }
+
+  } catch (error) {
+    console.error('Generation error:', error);
+    addToast(error instanceof Error ? error.message : 'Failed to generate response', 'error');
+  } finally {
+    setGenerating(false); // ✅ ensures button resets even after streamed output
+  }
+};
+
 
   const handleReset = () => {
     setPrompt('');
     setResponses([]);
     addToast('Experiment reset', 'info');
   };
+useEffect(() => {
+  // Reset "Generating..." state if prompt changes
+  setGenerating(false);
+}, [currentPrompt]);
 
   return (
     <div className="w-full">

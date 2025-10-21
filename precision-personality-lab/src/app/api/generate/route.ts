@@ -17,7 +17,10 @@ function calculateMetrics(text: string) {
     creativity: Math.min(100, (uniqueWords.size / words.length) * 150),
     coherence: Math.min(100, (sentences.length / words.length) * 400),
     structure: Math.min(100, sentences.length > 0 ? 80 + Math.random() * 20 : 50),
-    completeness: Math.min(100, words.length > 50 ? 90 + Math.random() * 10 : (words.length / 50) * 90),
+    completeness: Math.min(
+      100,
+      words.length > 50 ? 90 + Math.random() * 10 : (words.length / 50) * 90
+    ),
     length: words.length,
     lexicalDiversity: (uniqueWords.size / words.length) * 100,
   };
@@ -25,7 +28,10 @@ function calculateMetrics(text: string) {
 
 // --- Utility: Unified JSON response format ---
 function jsonResponse(success: boolean, data: any, message?: string, status = 200) {
-  return NextResponse.json({ success, status, message: message || (success ? 'OK' : 'Error'), data }, { status });
+  return NextResponse.json(
+    { success, status, message: message || (success ? 'OK' : 'Error'), data },
+    { status }
+  );
 }
 
 // --- Core handler ---
@@ -44,54 +50,77 @@ async function generateHandler(req: NextRequest) {
   if (!llmApiKey)
     return jsonResponse(false, {}, 'Missing LLM API key. Check environment variables.', 500);
 
+    // --- Auth block (use anon client for JWT validation) ---
   const authHeader = req.headers.get('authorization');
   if (!authHeader) return jsonResponse(false, {}, 'Missing authorization header', 401);
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  const token = authHeader.replace('Bearer ', '').trim();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return jsonResponse(false, {}, 'Not authenticated', 401);
+  // Create two Supabase clients: anon for auth validation, service for DB ops
+  const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+  console.log('[AUTH DEBUG] Validating Supabase JWT (anon client)...');
+  const { data: authData, error: authError } = await supabaseAnon.auth.getUser(token);
+
+  if (authError || !authData?.user) {
+    console.error('[AUTH DEBUG] Failed to authenticate user:', authError);
+    return jsonResponse(false, {}, 'Not authenticated', 401);
+  }
+
+  const user = authData.user;
+  console.log('[AUTH DEBUG] Authenticated user:', user.id, user.email);
+
+  // Use the admin client for all privileged DB queries
+  const supabase = supabaseAdmin;
+
+
+  // --- Parse request body ---
   const body = await req.json();
   const { prompt, calibrationId, parameters: customParameters } = body;
   if (!prompt) return jsonResponse(false, {}, 'Prompt is required', 400);
 
   // --- Retrieve calibration ---
   let calibration = null;
-  if (calibrationId) {
-    const { data } = await supabase
-      .from('calibrations')
-      .select('*')
-      .eq('id', calibrationId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (data) calibration = data;
-  }
+  const { data: calibrationData } = await supabase
+    .from('calibrations')
+    .select('*')
+    .eq('id', calibrationId || '')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  calibration = calibrationData;
   if (!calibration) {
-    const { data } = await supabase
+    const { data: latest } = await supabase
       .from('calibrations')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (data) calibration = data;
+    calibration = latest;
   }
+
   if (!calibration)
     return jsonResponse(false, {}, 'No calibration found. Please complete calibration first.', 400);
 
   const parameters = customParameters || {
-    temperature: (Number(calibration.temperature_min) + Number(calibration.temperature_max)) / 2,
+    temperature:
+      (Number(calibration.temperature_min) + Number(calibration.temperature_max)) / 2,
     topP: (Number(calibration.top_p_min) + Number(calibration.top_p_max)) / 2,
-    maxTokens: Math.floor((calibration.max_tokens_min + calibration.max_tokens_max) / 2),
+    maxTokens: Math.floor(
+      (calibration.max_tokens_min + calibration.max_tokens_max) / 2
+    ),
     frequencyPenalty:
-      (Number(calibration.frequency_penalty_min) + Number(calibration.frequency_penalty_max)) / 2,
+      (Number(calibration.frequency_penalty_min) +
+        Number(calibration.frequency_penalty_max)) /
+      2,
     presencePenalty: 0,
   };
 
-  const correlationId = `${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const correlationId = `${user.id}-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
   await logAuditEvent('llm_stream_started', {
     correlation_id: correlationId,
     event_scope: 'llm',
@@ -172,7 +201,12 @@ async function generateHandler(req: NextRequest) {
     .single();
 
   if (experimentError)
-    return jsonResponse(false, { error: experimentError.message }, 'Failed to save experiment', 500);
+    return jsonResponse(
+      false,
+      { error: experimentError.message },
+      'Failed to save experiment',
+      500
+    );
 
   // --- Analytics & Audit ---
   await supabase.from('analytics_summaries').upsert({
@@ -213,5 +247,25 @@ async function generateHandler(req: NextRequest) {
   );
 }
 
-// --- Compose middleware chain ---
-export const POST = withErrorHandler(withTelemetry(withRateLimit(generateHandler)));
+// --- Compose middleware chain (diagnostic version) ---
+let wrappedHandler: any = generateHandler;
+
+try {
+  console.log('[DEBUG] Type before rate-limit:', typeof wrappedHandler);
+  wrappedHandler = withRateLimit(wrappedHandler);
+  console.log('[DEBUG] After rate-limit:', typeof wrappedHandler);
+
+  wrappedHandler = withTelemetry(wrappedHandler);
+  console.log('[DEBUG] After telemetry:', typeof wrappedHandler);
+
+  wrappedHandler = withErrorHandler(wrappedHandler);
+  console.log('[DEBUG] After error handler:', typeof wrappedHandler);
+} catch (err) {
+  console.error('[DEBUG] Middleware wrapping failed:', err);
+}
+
+export const POST = async (req: Request) => {
+  console.log('[DEBUG] POST handler executing...');
+  console.log('[DEBUG] Type before invoke:', typeof wrappedHandler);
+  return await wrappedHandler(req);
+};

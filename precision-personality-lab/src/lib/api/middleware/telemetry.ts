@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 
 /**
  * Telemetry middleware — logs performance metrics and latency to Supabase.
- * Can be composed with error handler and rate limiter.
+ * Must synchronously return a callable async function.
  */
-export async function withTelemetry(handler: Function) {
+export function withTelemetry(handler: Function) {
   return async (req: Request, ...args: any[]) => {
     const start = Date.now();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -43,7 +43,10 @@ export async function withTelemetry(handler: Function) {
         });
       }
 
-      return NextResponse.json({ success: false, message: 'Internal telemetry error' }, { status: 500 });
+      return NextResponse.json(
+        { success: false, message: 'Internal telemetry error' },
+        { status: 500 }
+      );
     }
   };
 }

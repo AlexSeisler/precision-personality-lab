@@ -6,7 +6,8 @@ const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
 const LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const REQUEST_LIMIT = 30; // Max requests per minute per user/IP
 
-export async function withRateLimit(handler: Function) {
+// ✅ FIXED: remove "async" from this function declaration
+export function withRateLimit(handler: Function) {
   return async (req: Request, ...args: any[]) => {
     try {
       const ip =
@@ -38,6 +39,7 @@ export async function withRateLimit(handler: Function) {
         );
       }
 
+      // ✅ Call the wrapped handler
       return await handler(req, ...args);
     } catch (error: any) {
       console.error('Rate limit middleware error:', error);

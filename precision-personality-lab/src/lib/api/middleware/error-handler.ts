@@ -5,16 +5,21 @@ import { NextResponse } from 'next/server';
  * Wraps API route logic in a standardized try/catch structure.
  * Logs audit events when available.
  */
-export async function withErrorHandler(handler: Function) {
+export function withErrorHandler(handler: Function) {
   return async (req: Request, ...args: any[]) => {
     try {
       const result = await handler(req, ...args);
       return result;
     } catch (error: any) {
-      console.error('API Error:', error);
-      const message = error.message || 'Internal Server Error';
-      const status = error.status || 500;
-      return NextResponse.json({ success: false, status, message, data: {} }, { status });
+      console.error('[ErrorHandler] API Error:', error);
+
+      const message = error?.message || 'Internal Server Error';
+      const status = error?.status || 500;
+
+      return NextResponse.json(
+        { success: false, status, message, data: {} },
+        { status }
+      );
     }
   };
 }
