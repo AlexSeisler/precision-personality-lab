@@ -15,7 +15,6 @@ import { useUIStore } from '@/store/ui-store';
 import { useMetricsStore } from '@/store/metrics-store';
 import { supabase } from '@/lib/supabase/client';
 
-
 export default function ExperimentPage() {
   const router = useRouter();
   const {
@@ -32,10 +31,13 @@ export default function ExperimentPage() {
   const { isCalibrated, parameterRanges, currentCalibrationId } = useCalibrationStore();
   const { addToast } = useUIStore();
   const { computeSummary } = useMetricsStore();
+
+  // 🆕 Add local state for multi-response count
   const [responseCount, setResponseCount] = useState(1);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [hasLoadedCalibration, setHasLoadedCalibration] = useState(false);
 
+  // Load calibration defaults on mount
   useEffect(() => {
     if (isCalibrated && parameterRanges && !hasLoadedCalibration) {
       const midTemp = (parameterRanges.temperature.min + parameterRanges.temperature.max) / 2;
@@ -53,93 +55,80 @@ export default function ExperimentPage() {
     }
   }, [isCalibrated, parameterRanges, hasLoadedCalibration, setParameter, addToast]);
 
-const handleGenerate = async () => {
-  if (!currentPrompt.trim()) {
-    addToast('Please enter a prompt before generating', 'warning');
-    return;
-  }
-
-  if (!currentCalibrationId) {
-    addToast('No calibration found. Please complete calibration first.', 'error');
-    router.push('/calibration');
-    return;
-  }
-
-  setGenerating(true);
-  addToast('Generating response...', 'info');
-
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (!session) {
-      addToast('Authentication required', 'error');
-      setGenerating(false);
+  // --- Handle generation ---
+  const handleGenerate = async () => {
+    if (!currentPrompt.trim()) {
+      addToast('Please enter a prompt before generating', 'warning');
       return;
     }
 
-    const response = await fetch('/api/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        prompt: currentPrompt,
-        calibrationId: currentCalibrationId,
-        parameters: currentParameters,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData?.message || `Generation failed: ${response.status}`);
+    if (!currentCalibrationId) {
+      addToast('No calibration found. Please complete calibration first.', 'error');
+      router.push('/calibration');
+      return;
     }
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let fullText = '';
+    setGenerating(true);
+    addToast('Generating response...', 'info');
 
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value, { stream: true });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        addToast('Authentication required', 'error');
+        setGenerating(false);
+        return;
       }
+
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          prompt: currentPrompt,
+          calibrationId: currentCalibrationId,
+          parameters: currentParameters,
+          responseCount, // 🆕 send response count to backend
+        }),
+
+      });
+
+      const result = await response.json();
+      console.log('[LLM DEBUG] API result:', result);
+
+      if (!response.ok) {
+        throw new Error(result?.message || `Generation failed: ${response.status}`);
+      }
+
+      const experiment = result.data?.experiment;
+      if (experiment?.responses?.length) {
+        setResponses(experiment.responses);
+        await computeSummary(experiment.responses, currentCalibrationId);
+        addToast('Response generated successfully!', 'success');
+      } else {
+        addToast('No responses returned from model', 'warning');
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+      addToast(error instanceof Error ? error.message : 'Failed to generate response', 'error');
+    } finally {
+      setGenerating(false);
     }
+  };
 
-    // Extract the last valid JSON block from the streamed data
-    const lines = fullText.split('\n').filter(Boolean);
-    const lastJson = lines.reverse().find(line => line.trim().startsWith('{') && line.trim().endsWith('}'));
-    if (!lastJson) throw new Error('No valid JSON found in stream.');
-
-    const data = JSON.parse(lastJson);
-
-    if (data.experiment?.responses) {
-      setResponses(data.experiment.responses);
-      await computeSummary(data.experiment.responses, currentCalibrationId);
-      addToast('Response generated successfully!', 'success');
-    } else {
-      addToast('No responses found in generated data.', 'warning');
-    }
-
-  } catch (error) {
-    console.error('Generation error:', error);
-    addToast(error instanceof Error ? error.message : 'Failed to generate response', 'error');
-  } finally {
-    setGenerating(false); // ✅ ensures button resets even after streamed output
-  }
-};
-
-
+  // --- Reset experiment ---
   const handleReset = () => {
     setPrompt('');
     setResponses([]);
     addToast('Experiment reset', 'info');
   };
-useEffect(() => {
-  // Reset "Generating..." state if prompt changes
-  setGenerating(false);
-}, [currentPrompt]);
+
+  // Reset "Generating..." if prompt changes
+  useEffect(() => {
+    setGenerating(false);
+  }, [currentPrompt]);
 
   return (
     <div className="w-full">
@@ -194,7 +183,25 @@ useEffect(() => {
               placeholder="Enter your prompt here... Try asking about AI, science, creativity, or any topic!"
             />
 
-            <Card className="p-6">
+            <Card className="p-6 space-y-4">
+              {/* 🆕 Response Count Selector */}
+              <div className="flex justify-center gap-2 mb-2">
+                {[1, 3, 5, 20, 100].map((count) => {
+                  const disabled = count > 5; // lock 20/100 for normal users
+                  return (
+                    <Button
+                      key={count}
+                      variant={count === responseCount ? "default" : "outline"}
+                      disabled={disabled}
+                      onClick={() => setResponseCount(count)}
+                      className={`w-12 text-sm ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      {count}
+                    </Button>
+                  );
+                })}
+              </div>
+
               <Button
                 onClick={handleGenerate}
                 isLoading={isGenerating}
@@ -215,6 +222,7 @@ useEffect(() => {
                 )}
               </Button>
             </Card>
+
 
             {currentResponses.length > 0 && (
               <motion.div
@@ -287,7 +295,9 @@ function ResponseCard({ response, index }: ResponseCardProps) {
           </div>
         </div>
 
-        <p className="text-gray-300 leading-relaxed mb-4">{response.text}</p>
+        <p className="text-gray-300 leading-relaxed mb-4 whitespace-pre-wrap">
+          {response.text}
+        </p>
 
         <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/10">
           <MetricBadge label="Creativity" value={response.metrics.creativity} color="orange" />

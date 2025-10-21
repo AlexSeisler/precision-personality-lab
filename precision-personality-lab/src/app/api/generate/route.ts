@@ -50,7 +50,7 @@ async function generateHandler(req: NextRequest) {
   if (!llmApiKey)
     return jsonResponse(false, {}, 'Missing LLM API key. Check environment variables.', 500);
 
-    // --- Auth block (use anon client for JWT validation) ---
+  // --- Auth block (use anon client for JWT validation) ---
   const authHeader = req.headers.get('authorization');
   if (!authHeader) return jsonResponse(false, {}, 'Missing authorization header', 401);
 
@@ -74,11 +74,11 @@ async function generateHandler(req: NextRequest) {
   // Use the admin client for all privileged DB queries
   const supabase = supabaseAdmin;
 
+// --- Parse request body ---
+const body = await req.json();
+const { prompt, calibrationId, parameters: customParameters, responseCount = 1 } = body;
+if (!prompt) return jsonResponse(false, {}, 'Prompt is required', 400);
 
-  // --- Parse request body ---
-  const body = await req.json();
-  const { prompt, calibrationId, parameters: customParameters } = body;
-  if (!prompt) return jsonResponse(false, {}, 'Prompt is required', 400);
 
   // --- Retrieve calibration ---
   let calibration = null;
@@ -121,92 +121,90 @@ async function generateHandler(req: NextRequest) {
   const correlationId = `${user.id}-${Date.now()}-${Math.random()
     .toString(36)
     .slice(2)}`;
-  await logAuditEvent('llm_stream_started', {
+  await logAuditEvent('llm_request_started', {
     correlation_id: correlationId,
     event_scope: 'llm',
     event_severity: 'info',
     calibration_id: calibration.id,
   });
 
-  // --- Call LLM API ---
-  const llmStartTime = Date.now();
+// --- Concurrent LLM requests ---
+const llmStartTime = Date.now();
+
+const generateResponse = async (i: number) => {
+  // vary params slightly for diversity
+  const variedParams = {
+    ...parameters,
+    temperature: Math.max(0.1, Math.min(1.2, parameters.temperature + (Math.random() - 0.5) * 0.2)),
+    topP: Math.max(0.5, Math.min(1.0, parameters.topP + (Math.random() - 0.5) * 0.2)),
+  };
+
   const llmResponse = await fetch(llmApiUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${llmApiKey}` },
     body: JSON.stringify({
       model: llmModel,
       messages: [{ role: 'user', content: prompt }],
-      temperature: parameters.temperature,
-      top_p: parameters.topP,
+      temperature: variedParams.temperature,
+      top_p: variedParams.topP,
       max_tokens: parameters.maxTokens,
       frequency_penalty: parameters.frequencyPenalty,
-      stream: true,
     }),
   });
 
-  if (!llmResponse.ok) {
-    const errText = await llmResponse.text();
-    await logAuditEvent('llm_request_error', {
-      correlation_id: correlationId,
-      error: errText,
-      status: llmResponse.status,
-      event_scope: 'llm',
-      event_severity: 'error',
-    });
-    return jsonResponse(false, { error: errText }, 'LLM API failed', 502);
-  }
+  const result = await llmResponse.json().catch(() => ({}));
+  const text = result?.choices?.[0]?.message?.content || 'No text returned';
+  const metrics = calculateMetrics(text);
 
-  // --- Stream response ---
-  const reader = llmResponse.body?.getReader();
-  const decoder = new TextDecoder();
-  let generatedText = '';
-  if (reader) {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      generatedText += decoder.decode(value);
-    }
-  } else {
-    generatedText = await llmResponse.text();
-  }
+  return {
+    id: crypto.randomUUID(),
+    text,
+    parameters: variedParams,
+    metrics,
+    timestamp: Date.now(),
+    latency_ms: Date.now() - llmStartTime,
+  };
+};
 
-  const latencyMs = Date.now() - llmStartTime;
-  if (!generatedText.trim()) generatedText = `No text returned by model "${llmModel}".`;
+// Run multiple LLM generations concurrently
+const generationTasks = Array.from({ length: responseCount }, (_, i) => generateResponse(i));
+const generationResults = await Promise.allSettled(generationTasks);
 
-  const metrics = calculateMetrics(generatedText);
+// Filter successful ones
+const responses = generationResults
+  .filter(r => r.status === 'fulfilled')
+  .map(r => r.value);
 
-  // --- Persist experiment ---
-  const { data: experiment, error: experimentError } = await supabase
-    .from('experiments')
-    .insert({
-      user_id: user.id,
-      calibration_id: calibration.id,
-      prompt,
-      parameters,
-      responses: [
-        {
-          id: crypto.randomUUID(),
-          text: generatedText,
-          parameters,
-          metrics,
-          timestamp: Date.now(),
-          prompt,
-          latency_ms: latencyMs,
-        },
-      ],
-      saved: true,
-      discarded: false,
-    })
-    .select()
-    .single();
+if (!responses.length) {
+  return jsonResponse(false, {}, 'No valid LLM responses generated', 500);
+}
 
-  if (experimentError)
-    return jsonResponse(
-      false,
-      { error: experimentError.message },
-      'Failed to save experiment',
-      500
-    );
+const latencyMs = Date.now() - llmStartTime;
+const metrics = calculateMetrics(responses.map(r => r.text).join(' '));
+
+// --- Persist experiment ---
+const { data: experiment, error: experimentError } = await supabase
+  .from('experiments')
+  .insert({
+    user_id: user.id,
+    calibration_id: calibration.id,
+    prompt,
+    parameters,
+    responses, // ✅ store all concurrent responses
+    saved: true,
+    discarded: false,
+  })
+  .select()
+  .single();
+
+if (experimentError)
+  return jsonResponse(
+    false,
+    { error: experimentError.message },
+    'Failed to save experiment',
+    500
+  );
+
 
   // --- Analytics & Audit ---
   await supabase.from('analytics_summaries').upsert({
@@ -226,7 +224,7 @@ async function generateHandler(req: NextRequest) {
     event_severity: 'info',
   });
 
-  await logAuditEvent('llm_stream_completed', {
+  await logAuditEvent('llm_request_completed', {
     correlation_id: correlationId,
     total_latency_ms: Date.now() - startTime,
     event_scope: 'llm',
@@ -237,7 +235,7 @@ async function generateHandler(req: NextRequest) {
     true,
     {
       experiment,
-      response: generatedText,
+      responses, // ✅ return all responses
       metrics,
       latency_ms: latencyMs,
       total_latency_ms: Date.now() - startTime,
@@ -245,6 +243,7 @@ async function generateHandler(req: NextRequest) {
     'Experiment generated successfully',
     200
   );
+
 }
 
 // --- Compose middleware chain (diagnostic version) ---
