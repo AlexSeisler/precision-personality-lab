@@ -40,20 +40,38 @@ export default function ExperimentPage() {
   // Load calibration defaults on mount
   useEffect(() => {
     if (isCalibrated && parameterRanges && !hasLoadedCalibration) {
-      const midTemp = (parameterRanges.temperature.min + parameterRanges.temperature.max) / 2;
-      const midTopP = (parameterRanges.topP.min + parameterRanges.topP.max) / 2;
-      const midTokens = Math.round((parameterRanges.maxTokens.min + parameterRanges.maxTokens.max) / 2);
-      const midFreq = (parameterRanges.frequencyPenalty.min + parameterRanges.frequencyPenalty.max) / 2;
+      const midTemp =
+        (parameterRanges.temperature.min + parameterRanges.temperature.max) / 2;
+      const midTopP =
+        (parameterRanges.topP.min + parameterRanges.topP.max) / 2;
+      const midTokens = Math.round(
+        (parameterRanges.maxTokens.min + parameterRanges.maxTokens.max) / 2
+      );
+      const midFreq =
+        (parameterRanges.frequencyPenalty.min + parameterRanges.frequencyPenalty.max) / 2;
+      const midPresence =
+        (parameterRanges.presencePenalty?.min ?? 0) +
+        (parameterRanges.presencePenalty?.max ?? 0) / 2;
 
       setParameter('temperature', midTemp);
       setParameter('topP', midTopP);
       setParameter('maxTokens', midTokens);
       setParameter('frequencyPenalty', midFreq);
+      setParameter('presencePenalty', midPresence);
+
+      console.log('[DEBUG] Calibration parameters loaded:', {
+        midTemp,
+        midTopP,
+        midTokens,
+        midFreq,
+        midPresence,
+      });
 
       setHasLoadedCalibration(true);
       addToast('✨ Calibration settings loaded from previous session', 'info', 4000);
     }
   }, [isCalibrated, parameterRanges, hasLoadedCalibration, setParameter, addToast]);
+
 
   // --- Handle generation ---
   const handleGenerate = async () => {
@@ -287,7 +305,11 @@ function ResponseCard({ response, index }: ResponseCardProps) {
               {index + 1}
             </div>
             <div>
-              <h3 className="font-semibold text-white">Response {index + 1}</h3>
+              <h3 className="font-semibold text-white">
+                Response {index + 1}{' '}
+                {response.parameters.variationType === 'exact' ? '🎯 Exact' : '🔀 Varied'}
+              </h3>
+
               <p className="text-xs text-gray-400">
                 T: {response.parameters.temperature.toFixed(1)} | P: {response.parameters.topP.toFixed(2)}
               </p>

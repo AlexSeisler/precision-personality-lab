@@ -71,14 +71,12 @@ async function generateHandler(req: NextRequest) {
   const user = authData.user;
   console.log('[AUTH DEBUG] Authenticated user:', user.id, user.email);
 
-  // Use the admin client for all privileged DB queries
   const supabase = supabaseAdmin;
 
-// --- Parse request body ---
-const body = await req.json();
-const { prompt, calibrationId, parameters: customParameters, responseCount = 1 } = body;
-if (!prompt) return jsonResponse(false, {}, 'Prompt is required', 400);
-
+  // --- Parse request body ---
+  const body = await req.json();
+  const { prompt, calibrationId, parameters: customParameters, responseCount = 1 } = body;
+  if (!prompt) return jsonResponse(false, {}, 'Prompt is required', 400);
 
   // --- Retrieve calibration ---
   let calibration = null;
@@ -104,23 +102,25 @@ if (!prompt) return jsonResponse(false, {}, 'Prompt is required', 400);
   if (!calibration)
     return jsonResponse(false, {}, 'No calibration found. Please complete calibration first.', 400);
 
-  const parameters = customParameters || {
+  const parameters = {
     temperature:
+      customParameters?.temperature ??
       (Number(calibration.temperature_min) + Number(calibration.temperature_max)) / 2,
-    topP: (Number(calibration.top_p_min) + Number(calibration.top_p_max)) / 2,
-    maxTokens: Math.floor(
-      (calibration.max_tokens_min + calibration.max_tokens_max) / 2
-    ),
+    topP:
+      customParameters?.topP ??
+      (Number(calibration.top_p_min) + Number(calibration.top_p_max)) / 2,
+    maxTokens:
+      customParameters?.maxTokens ??
+      Math.floor((calibration.max_tokens_min + calibration.max_tokens_max) / 2),
     frequencyPenalty:
+      customParameters?.frequencyPenalty ??
       (Number(calibration.frequency_penalty_min) +
         Number(calibration.frequency_penalty_max)) /
-      2,
-    presencePenalty: 0,
+        2,
+    presencePenalty: customParameters?.presencePenalty ?? 0,
   };
 
-  const correlationId = `${user.id}-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2)}`;
+  const correlationId = `${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   await logAuditEvent('llm_request_started', {
     correlation_id: correlationId,
     event_scope: 'llm',
@@ -128,83 +128,109 @@ if (!prompt) return jsonResponse(false, {}, 'Prompt is required', 400);
     calibration_id: calibration.id,
   });
 
-// --- Concurrent LLM requests ---
-const llmStartTime = Date.now();
+  // --- Concurrent LLM requests ---
+  const llmStartTime = Date.now();
 
-const generateResponse = async (i: number) => {
-  // vary params slightly for diversity
-  const variedParams = {
-    ...parameters,
-    temperature: Math.max(0.1, Math.min(1.2, parameters.temperature + (Math.random() - 0.5) * 0.2)),
-    topP: Math.max(0.5, Math.min(1.0, parameters.topP + (Math.random() - 0.5) * 0.2)),
+  const generateResponse = async (i: number) => {
+    // 🎯 Response 1 → exact user parameters
+    // 🔀 Additional responses → slight variations
+    const variedParams =
+      i === 0
+        ? { ...parameters, variationType: 'exact' }
+        : {
+            ...parameters,
+            variationType: 'varied',
+            temperature: Math.max(
+              0.1,
+              Math.min(2.0, parameters.temperature + (Math.random() - 0.5) * 0.3)
+            ),
+            topP: Math.max(
+              0.1,
+              Math.min(1.0, parameters.topP + (Math.random() - 0.5) * 0.2)
+            ),
+            frequencyPenalty: Math.max(
+              0,
+              Math.min(2, parameters.frequencyPenalty + (Math.random() - 0.5) * 0.2)
+            ),
+            presencePenalty: Math.max(
+              0,
+              Math.min(2, parameters.presencePenalty + (Math.random() - 0.5) * 0.2)
+            ),
+          };
+
+    console.log(`[VARIATION DEBUG] Response #${i + 1} params:`, variedParams);
+
+    const llmResponse = await fetch(llmApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${llmApiKey}`,
+      },
+      body: JSON.stringify({
+        model: llmModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: variedParams.temperature,
+        top_p: variedParams.topP,
+        max_tokens: variedParams.maxTokens,
+        frequency_penalty: variedParams.frequencyPenalty,
+        presence_penalty: variedParams.presencePenalty,
+      }),
+    });
+
+    const result = await llmResponse.json().catch(() => ({}));
+    const text = result?.choices?.[0]?.message?.content || 'No text returned';
+    const metrics = calculateMetrics(text);
+
+    return {
+      id: crypto.randomUUID(),
+      text,
+      parameters: variedParams,
+      metrics,
+      timestamp: Date.now(),
+      latency_ms: Date.now() - llmStartTime,
+    };
   };
 
-  const llmResponse = await fetch(llmApiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${llmApiKey}` },
-    body: JSON.stringify({
-      model: llmModel,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: variedParams.temperature,
-      top_p: variedParams.topP,
-      max_tokens: parameters.maxTokens,
-      frequency_penalty: parameters.frequencyPenalty,
-    }),
-  });
-
-  const result = await llmResponse.json().catch(() => ({}));
-  const text = result?.choices?.[0]?.message?.content || 'No text returned';
-  const metrics = calculateMetrics(text);
-
-  return {
-    id: crypto.randomUUID(),
-    text,
-    parameters: variedParams,
-    metrics,
-    timestamp: Date.now(),
-    latency_ms: Date.now() - llmStartTime,
-  };
-};
-
-// Run multiple LLM generations concurrently
-const generationTasks = Array.from({ length: responseCount }, (_, i) => generateResponse(i));
-const generationResults = await Promise.allSettled(generationTasks);
-
-// Filter successful ones
-const responses = generationResults
-  .filter(r => r.status === 'fulfilled')
-  .map(r => r.value);
-
-if (!responses.length) {
-  return jsonResponse(false, {}, 'No valid LLM responses generated', 500);
-}
-
-const latencyMs = Date.now() - llmStartTime;
-const metrics = calculateMetrics(responses.map(r => r.text).join(' '));
-
-// --- Persist experiment ---
-const { data: experiment, error: experimentError } = await supabase
-  .from('experiments')
-  .insert({
-    user_id: user.id,
-    calibration_id: calibration.id,
-    prompt,
-    parameters,
-    responses, // ✅ store all concurrent responses
-    saved: true,
-    discarded: false,
-  })
-  .select()
-  .single();
-
-if (experimentError)
-  return jsonResponse(
-    false,
-    { error: experimentError.message },
-    'Failed to save experiment',
-    500
+  // --- Run multiple LLM generations concurrently ---
+  const generationTasks = Array.from({ length: responseCount }, (_, i) =>
+    generateResponse(i)
   );
+  const generationResults = await Promise.allSettled(generationTasks);
 
+  const responses = generationResults
+    .filter((r) => r.status === 'fulfilled')
+    .map((r: any) => r.value);
+
+  if (!responses.length) {
+    return jsonResponse(false, {}, 'No valid LLM responses generated', 500);
+  }
+
+  const latencyMs = Date.now() - llmStartTime;
+  const metrics = calculateMetrics(responses.map((r) => r.text).join(' '));
+
+  // --- Persist experiment ---
+  const { data: experiment, error: experimentError } = await supabase
+    .from('experiments')
+    .insert({
+      user_id: user.id,
+      calibration_id: calibration.id,
+      prompt,
+      parameters,
+      responses,
+      saved: true,
+      discarded: false,
+    })
+    .select()
+    .single();
+
+  if (experimentError) {
+    return jsonResponse(
+      false,
+      { error: experimentError.message },
+      'Failed to save experiment',
+      500
+    );
+  }
 
   // --- Analytics & Audit ---
   await supabase.from('analytics_summaries').upsert({
@@ -235,7 +261,7 @@ if (experimentError)
     true,
     {
       experiment,
-      responses, // ✅ return all responses
+      responses,
       metrics,
       latency_ms: latencyMs,
       total_latency_ms: Date.now() - startTime,
@@ -243,28 +269,19 @@ if (experimentError)
     'Experiment generated successfully',
     200
   );
-
 }
 
-// --- Compose middleware chain (diagnostic version) ---
+// --- Compose middleware chain ---
 let wrappedHandler: any = generateHandler;
 
 try {
-  console.log('[DEBUG] Type before rate-limit:', typeof wrappedHandler);
   wrappedHandler = withRateLimit(wrappedHandler);
-  console.log('[DEBUG] After rate-limit:', typeof wrappedHandler);
-
   wrappedHandler = withTelemetry(wrappedHandler);
-  console.log('[DEBUG] After telemetry:', typeof wrappedHandler);
-
   wrappedHandler = withErrorHandler(wrappedHandler);
-  console.log('[DEBUG] After error handler:', typeof wrappedHandler);
 } catch (err) {
   console.error('[DEBUG] Middleware wrapping failed:', err);
 }
 
 export const POST = async (req: Request) => {
-  console.log('[DEBUG] POST handler executing...');
-  console.log('[DEBUG] Type before invoke:', typeof wrappedHandler);
   return await wrappedHandler(req);
 };
