@@ -24,7 +24,10 @@ export type AuditEventType =
   | 'realtime_disconnected'
   | 'realtime_error'
   | 'analytics_updated'
-  | 'analytics_computed';
+  | 'analytics_computed'
+  | 'auth_redirect'
+  | 'auth_redirect_error';
+
 
 function generateCorrelationId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;

@@ -18,6 +18,9 @@ interface UIState {
   updateLastSyncTime: () => void;
 }
 
+// 🔧 local debounce reference (not part of Zustand state)
+let connectionDebounce: NodeJS.Timeout | null = null;
+
 export const useUIStore = create<UIState>((set, get) => ({
   toasts: [],
   isExportModalOpen: false,
@@ -39,9 +42,10 @@ export const useUIStore = create<UIState>((set, get) => ({
     }
   },
 
-  removeToast: (id) => set((state) => ({
-    toasts: state.toasts.filter((t) => t.id !== id),
-  })),
+  removeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    })),
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
 
@@ -49,7 +53,16 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   setExportFormat: (format) => set({ exportFormat: format }),
 
-  setRealtimeConnected: (connected) => set({ isRealtimeConnected: connected }),
+  // ✅ Debounced connection state update
+  setRealtimeConnected: (connected) => {
+    if (connectionDebounce) clearTimeout(connectionDebounce);
+    connectionDebounce = setTimeout(() => {
+      const current = get().isRealtimeConnected;
+      if (current !== connected) {
+        set({ isRealtimeConnected: connected });
+      }
+    }, 500); // 500ms debounce
+  },
 
   updateLastSyncTime: () => set({ lastSyncTime: Date.now() }),
 }));

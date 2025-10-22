@@ -1,9 +1,9 @@
 "use client";
 
-import { Menu, Sparkles, LogOut, User, Archive } from "lucide-react";
+import { Menu, Sparkles, LogOut, User, Archive, FlaskConical } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useUIStore } from "@/store/ui-store";
 
@@ -14,6 +14,7 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, signOut } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { isRealtimeConnected, lastSyncTime } = useUIStore();
 
   const formatSyncTime = (time: number | null) => {
@@ -24,6 +25,9 @@ export function Header({ onMenuClick }: HeaderProps) {
     const minutes = Math.floor(seconds / 60);
     return `${minutes}m ago`;
   };
+
+  const isDashboard = pathname === "/dashboard";
+  const isExperiment = pathname === "/experiment";
 
   return (
     <header
@@ -76,29 +80,41 @@ export function Header({ onMenuClick }: HeaderProps) {
             <h1 className="text-xl font-bold gradient-text-precision">
               Precision + Personality Lab
             </h1>
-            <p className="text-xs text-gray-400">
-              GenAI Parameter Explorer
-            </p>
+            <p className="text-xs text-gray-400">GenAI Parameter Explorer</p>
           </div>
         </motion.div>
       </motion.div>
 
       {/* Center: Navigation */}
       {user && (
-        <nav className="hidden md:flex items-center gap-1 ml-8">
+        <nav className="hidden md:flex items-center gap-2 ml-8">
+          {/* Always visible Dashboard button */}
           <Link
             href="/dashboard"
-            className={
-              `flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-                pathname === "/dashboard"
-                  ? "bg-[#4A8FFF]/20 border border-[#4A8FFF]/50 text-[#4A8FFF]"
-                  : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
-              }`
-            }
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+              isDashboard
+                ? "bg-[#4A8FFF]/20 border border-[#4A8FFF]/50 text-[#4A8FFF]"
+                : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
+            }`}
           >
             <Archive className="w-4 h-4" />
             <span>Dashboard</span>
           </Link>
+
+          {/* Conditionally visible navigation to Experiment Studio */}
+          {(isDashboard || !isExperiment) && (
+            <button
+              onClick={() => router.push("/experiment")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+                isExperiment
+                  ? "bg-[#FF7E47]/20 border border-[#FF7E47]/50 text-[#FF7E47]"
+                  : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <FlaskConical className="w-4 h-4" />
+              <span>Experiment Studio</span>
+            </button>
+          )}
         </nav>
       )}
 
@@ -119,11 +135,9 @@ export function Header({ onMenuClick }: HeaderProps) {
             >
               <div className="flex items-center gap-2">
                 <motion.span
-                  className={
-                    `text-xs font-medium ${
-                      isRealtimeConnected ? "text-green-400" : "text-red-400"
-                    }`
-                  }
+                  className={`text-xs font-medium ${
+                    isRealtimeConnected ? "text-green-400" : "text-red-400"
+                  }`}
                   animate={{
                     scale: isRealtimeConnected ? [1, 1.2, 1] : 1,
                   }}
@@ -143,6 +157,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               </p>
             </motion.div>
 
+            {/* User Info */}
             <motion.div
               className="
                 hidden md:flex items-center gap-2
@@ -156,6 +171,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               <span className="text-sm text-gray-300">{user.email}</span>
             </motion.div>
 
+            {/* Sign Out */}
             <motion.button
               onClick={signOut}
               className="
