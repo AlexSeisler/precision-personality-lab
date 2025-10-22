@@ -181,13 +181,16 @@ For deeper details, see `/docs/security.md`.
 
 All project documentation is located in the `/docs` directory and follows a modular format:
 
-| File                                           | Description                                                |
-| ---------------------------------------------- | ---------------------------------------------------------- |
-| [architecture.md](/docs/architecture.md)       | Full system architecture, module breakdown, and data flow. |
-| [security.md](/docs/security.md)               | Security, authentication, and compliance mechanisms.       |
-| [integrations.md](/docs/integrations.md)       | Service integrations with Supabase, OpenAI, and Vercel.    |
-| [diagrams.md](/docs/diagrams.md)               | Visual ERDs, UMLs, and system topologies.                  |
-| [time-estimates.csv](/docs/time-estimates.csv) | Engineering effort estimates and variance tracking.        |
+| File                                                                 | Description                                                |
+| -------------------------------------------------------------------- | ---------------------------------------------------------- |
+| [ARCHITECTURE.md](/docs/ARCHITECTURE.md)                             | Full system architecture, module breakdown, and data flow. |
+| [SECURITY.md](/docs/SECURITY.md)                                     | Security, authentication, and compliance mechanisms.       |
+| [INTEGRATIONS.md](/docs/INTEGRATIONS.md)                             | Service integrations with Supabase, OpenAI, and Vercel.    |
+| [DIAGRAMS/DATABASE-ERD.md](/docs/DIAGRAMS/DATABASE-ERD.md)           | Entity–Relationship Diagram (ERD) for the database schema. |
+| [DIAGRAMS/SYSTEM-TOPOLOGY.md](/docs/DIAGRAMS/SYSTEM-TOPOLOGY.md)     | System topology, data flow, and infrastructure layout.     |
+| [DIAGRAMS/WORKFLOW-SEQUENCE.md](/docs/DIAGRAMS/WORKFLOW-SEQUENCE.md) | Workflow and observability sequence diagrams.              |
+| [LICENSE.md](/docs/LICENSE.md)                                       | Project licensing information and usage terms.             |
+| [TimeSheet.png](/docs/TimeSheet.png)                                 | Time tracking and execution overview visual.               |
 
 📘 Each file is written for **clarity and audit readiness**, suitable for **technical assessments** or **case study reviews**.
 
