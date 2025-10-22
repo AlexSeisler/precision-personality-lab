@@ -177,6 +177,21 @@ For deeper details, see `/docs/security.md`.
 - **TypeScript Strict Mode** active across the codebase.  
 - Full documentation available under `/docs`.  
 
+## 📚 Documentation Overview
+
+All project documentation is located in the `/docs` directory and follows a modular format:
+
+| File | Description |
+|------|--------------|
+| `/docs/architecture.md` | Full system architecture, module breakdown, and data flow. |
+| `/docs/security.md` | Security, authentication, and compliance mechanisms. |
+| `/docs/integrations.md` | Service integrations with Supabase, OpenAI, and Vercel. |
+| `/docs/diagrams.md` | Visual ERDs, UMLs, and system topologies. |
+| `/docs/time-estimates.csv` | Engineering effort estimates and variance tracking. |
+
+📘 Each file is written for **clarity and audit readiness**, suitable for **technical assessments** or **case study reviews**.
+
+
 ---
 
 ## 🖯️ Roadmap  
@@ -187,6 +202,7 @@ For deeper details, see `/docs/security.md`.
 | v3.0 | Add analytics dashboard + user-defined experiment sharing |
 | v3.5 | Introduce RAG / memory modules for longitudinal calibration |
 | v4.0 | Enterprise portal + multi-tenant analytics layer |
+
 
 ---
 
