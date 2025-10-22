@@ -47,9 +47,6 @@ export function Header({ onMenuClick }: HeaderProps) {
     return `${minutes}m ago`;
   };
 
-  const isDashboard = pathname === "/dashboard";
-  const isExperiment = pathname === "/experiment";
-
   return (
     <header
       className="
@@ -106,44 +103,37 @@ export function Header({ onMenuClick }: HeaderProps) {
         </MotionDiv>
       </MotionDiv>
 
-      {/* Center: Navigation */}
+      {/* Center: Navigation - Always show 3 buttons */}
       {user && (
         <nav className="hidden md:flex items-center gap-2 ml-8">
+          {/* Dashboard Button */}
           <Link
             href="/dashboard"
             prefetch
             aria-label="Go to Dashboard"
-            aria-current={pathname === "/dashboard" ? "page" : undefined}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-              pathname === "/dashboard"
-                ? "bg-[#4A8FFF]/20 border border-[#4A8FFF]/50 text-[#4A8FFF]"
-                : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
-            }`}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
           >
             <Archive className="w-4 h-4" aria-hidden="true" />
             <span>Dashboard</span>
           </Link>
 
-          <button
-            onClick={() => router.push("/experiment")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-              pathname === "/experiment"
-                ? "bg-[#FF7E47]/20 border border-[#FF7E47]/50 text-[#FF7E47]"
-                : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
-            }`}
+          {/* Experiment Button */}
+          <Link
+            href="/experiment"
+            prefetch
+            aria-label="Go to Experiment Studio"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
           >
             <FlaskConical className="w-4 h-4" />
             <span>Experiment Studio</span>
-          </button>
+          </Link>
 
-          {/* ✅ New Metrics Link */}
-          <button
-            onClick={() => router.push("/metrics")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-              pathname === "/metrics"
-                ? "bg-[#22C55E]/20 border border-[#22C55E]/50 text-[#22C55E]"
-                : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
-            }`}
+          {/* Metrics Button */}
+          <Link
+            href="/metrics"
+            prefetch
+            aria-label="Go to Metrics"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -160,10 +150,9 @@ export function Header({ onMenuClick }: HeaderProps) {
               />
             </svg>
             <span>Metrics</span>
-          </button>
+          </Link>
         </nav>
       )}
-
 
       {/* Right: Status & User */}
       <div className="ml-auto flex items-center gap-3">
