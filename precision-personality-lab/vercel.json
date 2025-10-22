@@ -1,9 +1,12 @@
 {
-  "version": 3,
+  "version": 2,
+  "builds": [
+    {
+      "src": "next.config.ts",
+      "use": "@vercel/next"
+    }
+  ],
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "outputDirectory": ".next",
   "env": {
     "NODE_ENV": "production"
   },
