@@ -104,14 +104,23 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       );
     }
 
+    // ✅ Null-safe date filters
     if (filters.dateFrom) {
       const fromDate = new Date(filters.dateFrom);
-      filtered = filtered.filter((e) => new Date(e.created_at) >= fromDate);
+      filtered = filtered.filter(
+        (e) =>
+          e.created_at &&
+          new Date(e.created_at) >= fromDate
+      );
     }
 
     if (filters.dateTo) {
       const toDate = new Date(filters.dateTo);
-      filtered = filtered.filter((e) => new Date(e.created_at) <= toDate);
+      filtered = filtered.filter(
+        (e) =>
+          e.created_at &&
+          new Date(e.created_at) <= toDate
+      );
     }
 
     if (filters.searchTerm) {

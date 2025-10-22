@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { logAuditEvent } from '@/lib/api/audit';
-import type { Database } from '@/lib/supabase/types';
+import type { Database, Json } from '@/lib/supabase/types';
 import type { LLMResponse, ExperimentParameters } from '@/types';
 
 type ExperimentRow = Database['public']['Tables']['experiments']['Row'];
@@ -34,6 +34,7 @@ export async function saveExperiment(
   calibrationId?: string
 ) {
   const start = Date.now();
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('No authenticated user');
@@ -42,21 +43,25 @@ export async function saveExperiment(
       user_id: user.id,
       calibration_id: calibrationId || null,
       prompt,
+
+      // ✅ Supabase JSON-safe object
       parameters: {
         temperature: parameters.temperature,
         topP: parameters.topP,
         maxTokens: parameters.maxTokens,
         frequencyPenalty: parameters.frequencyPenalty,
         presencePenalty: parameters.presencePenalty,
-      },
-      responses: responses.map(r => ({
+      } as Json,
+
+      // ✅ Entire responses array cast once to Json[]
+      responses: responses.map((r) => ({
         id: r.id,
         text: r.text,
         parameters: r.parameters,
         metrics: r.metrics,
         timestamp: r.timestamp,
         prompt: r.prompt,
-      })),
+      })) as unknown as Json[],
     };
 
     const { data, error } = await supabase
@@ -113,10 +118,18 @@ export async function getAllExperiments(userId: string): Promise<ExperimentRow[]
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    await recordTelemetry('get_all_experiments', { latency_ms: Date.now() - start, status: 200 });
+
+    await recordTelemetry('get_all_experiments', {
+      latency_ms: Date.now() - start,
+      status: 200,
+    });
+
     return data || [];
   } catch (error) {
-    await recordTelemetry('get_all_experiments', { latency_ms: Date.now() - start, status: 500 });
+    await recordTelemetry('get_all_experiments', {
+      latency_ms: Date.now() - start,
+      status: 500,
+    });
     throw error;
   }
 }
@@ -136,10 +149,12 @@ export async function getExperimentsByCalibration(
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+
     await recordTelemetry('get_experiments_by_calibration', {
       latency_ms: Date.now() - start,
       status: 200,
     });
+
     return data || [];
   } catch (error) {
     await recordTelemetry('get_experiments_by_calibration', {
@@ -156,10 +171,7 @@ export async function deleteExperiment(experimentId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('No authenticated user');
 
-  const { error } = await supabase
-    .from('experiments')
-    .delete()
-    .eq('id', experimentId);
+  const { error } = await supabase.from('experiments').delete().eq('id', experimentId);
 
   const latency_ms = Date.now() - start;
 

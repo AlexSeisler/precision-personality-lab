@@ -17,6 +17,10 @@ interface CalibrationState {
   setCurrentQuestionIndex: (index: number) => void;
   setCalibrationId: (id: string | null) => void;
   resetCalibration: () => void;
+
+  // ✅ Add this for header.tsx compatibility
+  reset: () => void;
+
   getAnswerByQuestionId: (questionId: string) => CalibrationAnswer | undefined;
 }
 
@@ -52,22 +56,22 @@ export const useCalibrationStore = create<CalibrationState>()(
       },
 
       setParameterRanges: (ranges) => set({ parameterRanges: ranges }),
-
       setCalibrated: (calibrated) => set({ isCalibrated: calibrated }),
-
       setCalibrationMode: (mode) => set({ calibrationMode: mode }),
-
       setCurrentQuestionIndex: (index) => set({ currentQuestionIndex: index }),
-
       setCalibrationId: (id) => set({ currentCalibrationId: id }),
 
-      resetCalibration: () => set({
-        answers: [],
-        parameterRanges: defaultParameterRanges,
-        isCalibrated: false,
-        currentQuestionIndex: 0,
-        currentCalibrationId: null,
-      }),
+      resetCalibration: () =>
+        set({
+          answers: [],
+          parameterRanges: defaultParameterRanges,
+          isCalibrated: false,
+          currentQuestionIndex: 0,
+          currentCalibrationId: null,
+        }),
+
+      // ✅ Add reset alias (used by header.tsx)
+      reset: () => get().resetCalibration(),
 
       getAnswerByQuestionId: (questionId) => {
         return get().answers.find((a) => a.questionId === questionId);

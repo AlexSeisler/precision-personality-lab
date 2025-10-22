@@ -2,7 +2,11 @@ export interface CalibrationAnswer {
   questionId: string;
   answer: string | string[];
   type: 'multiple-choice' | 'open-ended';
+
+  // ✅ Added field to support weighted calibration scoring
+  weight?: number;
 }
+
 
 export interface ParameterRange {
   temperature: { min: number; max: number };

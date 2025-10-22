@@ -16,18 +16,26 @@ interface UIState {
   setExportFormat: (format: 'csv' | 'json') => void;
   setRealtimeConnected: (connected: boolean) => void;
   updateLastSyncTime: () => void;
+
+  // ✅ Added reset method
+  reset: () => void;
 }
 
 // 🔧 local debounce reference (not part of Zustand state)
 let connectionDebounce: NodeJS.Timeout | null = null;
 
-export const useUIStore = create<UIState>((set, get) => ({
-  toasts: [],
+// ✅ Initial state extracted for reuse in reset()
+const initialState = {
+  toasts: [] as Toast[],
   isExportModalOpen: false,
   isRecalibrateModalOpen: false,
-  exportFormat: 'json',
+  exportFormat: 'json' as 'csv' | 'json',
   isRealtimeConnected: false,
-  lastSyncTime: null,
+  lastSyncTime: null as number | null,
+};
+
+export const useUIStore = create<UIState>((set, get) => ({
+  ...initialState,
 
   addToast: (message, type = 'info', duration = 3000) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
@@ -48,9 +56,7 @@ export const useUIStore = create<UIState>((set, get) => ({
     })),
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
-
   setRecalibrateModalOpen: (open) => set({ isRecalibrateModalOpen: open }),
-
   setExportFormat: (format) => set({ exportFormat: format }),
 
   // ✅ Debounced connection state update
@@ -61,8 +67,11 @@ export const useUIStore = create<UIState>((set, get) => ({
       if (current !== connected) {
         set({ isRealtimeConnected: connected });
       }
-    }, 500); // 500ms debounce
+    }, 500);
   },
 
   updateLastSyncTime: () => set({ lastSyncTime: Date.now() }),
+
+  // ✅ Reset implementation — restores all fields to initial defaults
+  reset: () => set({ ...initialState }),
 }));
