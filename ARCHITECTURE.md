@@ -182,7 +182,7 @@ users (1) ───< system_metrics (∞)
 ```mermaid
 graph TD
 A[User] --> B[Next.js Frontend]
-B --> C[/api/generate]
+B --> C["/api/generate"]
 C --> D[OpenAI GPT-4o]
 C --> E[Supabase DB]
 E --> F[(experiments)]
