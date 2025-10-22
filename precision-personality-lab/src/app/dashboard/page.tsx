@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   BarChart3,
   Download,
@@ -29,6 +28,11 @@ import {
 import { getAllCalibrations } from '@/lib/api/calibrations';
 import { useRealtimeExperiments } from '@/lib/realtime/hooks';
 import type { Database } from '@/lib/supabase/types';
+
+// ✅ Updated import — lazy-loaded motion components
+import {
+  MotionDiv,
+} from '@/lib/lazy-motion';
 
 type ExperimentRow = Database['public']['Tables']['experiments']['Row'];
 type CalibrationRow = Database['public']['Tables']['calibrations']['Row'];
@@ -165,7 +169,8 @@ export default function DashboardPage() {
   return (
     <div className="w-full">
       <div className="px-6 md:px-8 py-8">
-        <motion.div
+        {/* ✅ motion.div replaced with MotionDiv */}
+        <MotionDiv
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
@@ -236,7 +241,7 @@ export default function DashboardPage() {
               </Button>
             </div>
           </div>
-        </motion.div>
+        </MotionDiv>
 
         {isLoading ? (
           <Card className="p-12 text-center">
@@ -279,10 +284,7 @@ interface ExperimentCardProps {
 }
 
 function ExperimentCard({ experiment, index, onDiscard, onSave }: ExperimentCardProps) {
-  const {
-    selectedExperiments,
-    toggleExperimentSelection,
-  } = useDashboardStore();
+  const { selectedExperiments, toggleExperimentSelection } = useDashboardStore();
 
   const params = experiment.parameters as {
     temperature?: number;
@@ -296,7 +298,8 @@ function ExperimentCard({ experiment, index, onDiscard, onSave }: ExperimentCard
   const isSelected = selectedExperiments.includes(experiment.id);
 
   return (
-    <motion.div
+    // ✅ motion.div replaced with MotionDiv
+    <MotionDiv
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
@@ -399,6 +402,6 @@ function ExperimentCard({ experiment, index, onDiscard, onSave }: ExperimentCard
           </div>
         )}
       </Card>
-    </motion.div>
+    </MotionDiv>
   );
 }

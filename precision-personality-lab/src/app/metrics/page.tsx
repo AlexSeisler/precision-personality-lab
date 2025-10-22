@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { BarChart3, Download, TrendingUp } from 'lucide-react';
 import {
   RadarChart,
@@ -22,6 +21,9 @@ import { Card } from '@/components/ui/card';
 import { useExperimentStore } from '@/store/experiment-store';
 import { useUIStore } from '@/store/ui-store';
 import { exportExperiment } from '@/lib/utils/export';
+
+// ✅ Updated import — use lazy-loaded motion wrappers
+import { MotionDiv, MotionSpan, MotionSection } from '@/lib/lazy-motion';
 
 export default function MetricsPage() {
   const { currentResponses } = useExperimentStore();
@@ -159,13 +161,14 @@ export default function MetricsPage() {
           />
         </div>
 
-        <motion.div
+        {/* ✅ motion.div → MotionDiv */}
+        <MotionDiv
           className="grid lg:grid-cols-2 gap-6 mb-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, staggerChildren: 0.1 }}
         >
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
@@ -174,46 +177,46 @@ export default function MetricsPage() {
               <h2 className="text-xl font-bold text-white mb-6">
                 Metrics Comparison
               </h2>
-            <ResponsiveContainer width="100%" height={350}>
-              <RadarChart data={radarData[0] ? [radarData[0]] : radarData}>
-                <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
-                <PolarAngleAxis
-                  dataKey="subject"
-                  tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                />
-                <PolarRadiusAxis
-                  angle={90}
-                  domain={[0, 100]}
-                  tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                />
-                <Radar
-                  name="Creativity"
-                  dataKey="Creativity"
-                  stroke="#FF7E47"
-                  fill="#FF7E47"
-                  fillOpacity={0.3}
-                />
-                <Radar
-                  name="Coherence"
-                  dataKey="Coherence"
-                  stroke="#4A8FFF"
-                  fill="#4A8FFF"
-                  fillOpacity={0.3}
-                />
-                <Radar
-                  name="Structure"
-                  dataKey="Structure"
-                  stroke="#A855F7"
-                  fill="#A855F7"
-                  fillOpacity={0.3}
-                />
-                <Legend wrapperStyle={{ color: '#fff' }} />
-              </RadarChart>
-            </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={350}>
+                <RadarChart data={radarData[0] ? [radarData[0]] : radarData}>
+                  <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={90}
+                    domain={[0, 100]}
+                    tick={{ fill: '#9CA3AF', fontSize: 10 }}
+                  />
+                  <Radar
+                    name="Creativity"
+                    dataKey="Creativity"
+                    stroke="#FF7E47"
+                    fill="#FF7E47"
+                    fillOpacity={0.3}
+                  />
+                  <Radar
+                    name="Coherence"
+                    dataKey="Coherence"
+                    stroke="#4A8FFF"
+                    fill="#4A8FFF"
+                    fillOpacity={0.3}
+                  />
+                  <Radar
+                    name="Structure"
+                    dataKey="Structure"
+                    stroke="#A855F7"
+                    fill="#A855F7"
+                    fillOpacity={0.3}
+                  />
+                  <Legend wrapperStyle={{ color: '#fff' }} />
+                </RadarChart>
+              </ResponsiveContainer>
             </Card>
-          </motion.div>
+          </MotionDiv>
 
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
@@ -222,30 +225,30 @@ export default function MetricsPage() {
               <h2 className="text-xl font-bold text-white mb-6">
                 Parameter Impact
               </h2>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={barData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(255, 255, 255, 0.1)"
-                />
-                <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(17, 18, 22, 0.95)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '8px',
-                    color: '#fff',
-                  }}
-                />
-                <Legend wrapperStyle={{ color: '#fff' }} />
-                <Bar dataKey="Creativity" fill="#FF7E47" />
-                <Bar dataKey="Coherence" fill="#4A8FFF" />
-              </BarChart>
-            </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={barData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255, 255, 255, 0.1)"
+                  />
+                  <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                  <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(17, 18, 22, 0.95)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      color: '#fff',
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: '#fff' }} />
+                  <Bar dataKey="Creativity" fill="#FF7E47" />
+                  <Bar dataKey="Coherence" fill="#4A8FFF" />
+                </BarChart>
+              </ResponsiveContainer>
             </Card>
-          </motion.div>
-        </motion.div>
+          </MotionDiv>
+        </MotionDiv>
 
         <Card className="p-6">
           <h2 className="text-xl font-bold text-white mb-4">
@@ -277,12 +280,13 @@ export default function MetricsPage() {
               </thead>
               <tbody>
                 {currentResponses.map((response, index) => (
-                  <motion.tr
+                  <MotionDiv
                     key={response.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.05 }}
                     className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                    as="tr"
                   >
                     <td className="p-3 text-sm text-white">
                       Response {index + 1}
@@ -302,7 +306,7 @@ export default function MetricsPage() {
                     <td className="p-3 text-sm text-gray-300">
                       {response.metrics.length} words
                     </td>
-                  </motion.tr>
+                  </MotionDiv>
                 ))}
               </tbody>
             </table>
@@ -328,22 +332,22 @@ function MetricCard({ label, value, color, delay = 0 }: MetricCardProps) {
   };
 
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
     >
       <Card className={`p-4 bg-gradient-to-br ${colorClasses[color]} hover-card`}>
         <p className="text-sm text-gray-400 mb-1">{label}</p>
-        <motion.p
-          className="text-3xl font-bold text-white"
+        <MotionSpan
+          className="text-3xl font-bold text-white inline-block"
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ delay: delay + 0.2, type: 'spring' }}
         >
           {value.toFixed(1)}
-        </motion.p>
+        </MotionSpan>
       </Card>
-    </motion.div>
+    </MotionDiv>
   );
 }

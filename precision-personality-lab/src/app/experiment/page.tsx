@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import {
   FlaskConical,
   Sparkles,
@@ -21,6 +20,9 @@ import { useCalibrationStore } from '@/store/calibration-store';
 import { useUIStore } from '@/store/ui-store';
 import { useMetricsStore } from '@/store/metrics-store';
 import { supabase } from '@/lib/supabase/client';
+
+// ✅ Updated import — lazy-loaded motion components
+import { MotionDiv } from '@/lib/lazy-motion';
 
 export default function ExperimentPage() {
   const router = useRouter();
@@ -46,7 +48,6 @@ export default function ExperimentPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isRecalibrating, setIsRecalibrating] = useState(false);
 
-  // --- Load calibration defaults ---
   const calibrationToastShown = useRef(false);
 
   useEffect(() => {
@@ -88,7 +89,6 @@ export default function ExperimentPage() {
     return () => clearTimeout(timeout);
   }, [isCalibrated, parameterRanges, hasLoadedCalibration, setParameter, addToast]);
 
-  // --- Generate Response ---
   const handleGenerate = async () => {
     if (!currentPrompt.trim()) {
       addToast('Please enter a prompt before generating', 'warning');
@@ -155,14 +155,12 @@ export default function ExperimentPage() {
     }
   };
 
-  // --- Reset Experiment ---
   const handleReset = () => {
     setPrompt('');
     setResponses([]);
     addToast('Experiment reset', 'info');
   };
 
-  // --- Recalibrate Modal Logic ---
   const handleRecalibrateConfirm = async () => {
     setIsRecalibrating(true);
     try {
@@ -178,7 +176,6 @@ export default function ExperimentPage() {
     setGenerating(false);
   }, [currentPrompt]);
 
-  // --- Render ---
   return (
     <div className="w-full">
       <div className="px-6 md:px-8">
@@ -198,7 +195,6 @@ export default function ExperimentPage() {
             </div>
           </div>
 
-          {/* --- Top Action Buttons --- */}
           <div className="flex gap-2 flex-wrap justify-end">
             {isCalibrated && (
               <Button
@@ -236,7 +232,6 @@ export default function ExperimentPage() {
             />
 
             <Card className="p-6 space-y-4">
-              {/* Response Count Selector */}
               <div className="flex justify-center gap-2 mb-2">
                 {[1, 3, 5, 20, 100].map((count) => {
                   const disabled = count > 5;
@@ -277,9 +272,9 @@ export default function ExperimentPage() {
               </Button>
             </Card>
 
-            {/* Responses */}
+            {/* ✅ motion.div → MotionDiv */}
             {currentResponses.length > 0 && (
-              <motion.div
+              <MotionDiv
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4"
@@ -288,7 +283,7 @@ export default function ExperimentPage() {
                 {currentResponses.map((response, index) => (
                   <ResponseCard key={response.id} response={response} index={index} />
                 ))}
-              </motion.div>
+              </MotionDiv>
             )}
 
             {currentResponses.length === 0 && !isGenerating && (
@@ -304,7 +299,6 @@ export default function ExperimentPage() {
             )}
           </div>
 
-          {/* Right Panel */}
           <div className="space-y-6">
             <ParameterControls
               parameters={currentParameters}
@@ -320,7 +314,6 @@ export default function ExperimentPage() {
         responses={currentResponses}
       />
 
-      {/* Recalibrate Confirmation Modal */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6 text-white animate-fade-in">
@@ -348,7 +341,6 @@ export default function ExperimentPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
@@ -360,7 +352,7 @@ interface ResponseCardProps {
 
 function ResponseCard({ response, index }: ResponseCardProps) {
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
@@ -396,7 +388,7 @@ function ResponseCard({ response, index }: ResponseCardProps) {
           <MetricBadge label="Structure" value={response.metrics.structure} color="purple" />
         </div>
       </Card>
-    </motion.div>
+    </MotionDiv>
   );
 }
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Download, FileJson, FileText, CheckCircle2 } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,9 @@ import { Card } from '@/components/ui/card';
 import { exportExperiment } from '@/lib/utils/export';
 import { useUIStore } from '@/store/ui-store';
 import type { LLMResponse } from '@/types';
+
+// ✅ Updated import — lazy-loaded motion wrappers
+import { MotionDiv, MotionButton } from '@/lib/lazy-motion';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -43,7 +45,9 @@ export function ExportModal({ isOpen, onClose, responses }: ExportModalProps) {
     setTimeout(() => {
       exportExperiment(responses, selectedFormat);
       addToast(
-        `Successfully exported ${responses.length} response${responses.length > 1 ? 's' : ''} as ${selectedFormat.toUpperCase()}`,
+        `Successfully exported ${responses.length} response${
+          responses.length > 1 ? 's' : ''
+        } as ${selectedFormat.toUpperCase()}`,
         'success'
       );
       setIsExporting(false);
@@ -52,11 +56,16 @@ export function ExportModal({ isOpen, onClose, responses }: ExportModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Export Experiment Data" size="md">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Export Experiment Data"
+      size="md"
+    >
       <div className="space-y-6">
         <p className="text-gray-300">
-          Choose a format to export your {responses.length} response{responses.length > 1 ? 's' : ''} and
-          experiment data.
+          Choose a format to export your {responses.length} response
+          {responses.length > 1 ? 's' : ''} and experiment data.
         </p>
 
         <div className="grid grid-cols-2 gap-4">
@@ -80,9 +89,14 @@ export function ExportModal({ isOpen, onClose, responses }: ExportModalProps) {
         </div>
 
         <div className="glass-card p-4 rounded-lg">
-          <h4 className="text-sm font-semibold text-white mb-2">Export Preview</h4>
+          <h4 className="text-sm font-semibold text-white mb-2">
+            Export Preview
+          </h4>
           <div className="space-y-1 text-sm text-gray-400">
-            <p>• {responses.length} response{responses.length > 1 ? 's' : ''}</p>
+            <p>
+              • {responses.length} response
+              {responses.length > 1 ? 's' : ''}
+            </p>
             <p>• Parameter configurations</p>
             <p>• Computed metrics (creativity, coherence, structure)</p>
             <p>• Timestamps and metadata</p>
@@ -94,7 +108,11 @@ export function ExportModal({ isOpen, onClose, responses }: ExportModalProps) {
             Cancel
           </Button>
 
-          <Button onClick={handleExport} isLoading={isExporting} disabled={isExporting}>
+          <Button
+            onClick={handleExport}
+            isLoading={isExporting}
+            disabled={isExporting}
+          >
             <Download className="w-4 h-4" />
             Export {selectedFormat.toUpperCase()}
           </Button>
@@ -122,7 +140,8 @@ function FormatOption({
   onClick,
 }: FormatOptionProps) {
   return (
-    <motion.button
+    // ✅ motion.button → MotionButton
+    <MotionButton
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
@@ -136,13 +155,14 @@ function FormatOption({
       `}
     >
       {isSelected && (
-        <motion.div
+        // ✅ motion.div → MotionDiv
+        <MotionDiv
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           className="absolute top-3 right-3"
         >
           <CheckCircle2 className="w-5 h-5 text-[#4A8FFF]" />
-        </motion.div>
+        </MotionDiv>
       )}
 
       <div
@@ -155,6 +175,6 @@ function FormatOption({
 
       <h3 className="text-lg font-bold text-white mb-1">{title}</h3>
       <p className="text-sm text-gray-400">{description}</p>
-    </motion.button>
+    </MotionButton>
   );
 }

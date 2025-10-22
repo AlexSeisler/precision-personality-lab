@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+// ✅ Replaced framer-motion import
+import { MotionDiv, MotionSpan } from '@/lib/lazy-motion';
 
 interface SliderProps {
   label: string;
@@ -50,19 +51,22 @@ export function Slider({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-300">{label}</label>
-        <motion.span
+
+        {/* ✅ motion.span → MotionSpan */}
+        <MotionSpan
           key={value}
           initial={{ scale: 1.2 }}
           animate={{ scale: 1 }}
           className="text-sm font-mono font-semibold text-white bg-white/5 px-2 py-1 rounded"
         >
           {value.toFixed(step < 1 ? 2 : 0)}
-        </motion.span>
+        </MotionSpan>
       </div>
 
       <div className="relative">
         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-          <motion.div
+          {/* ✅ motion.div → MotionDiv */}
+          <MotionDiv
             className={`h-full bg-gradient-to-r ${colorClasses[color].track}`}
             style={{ width: `${percentage}%` }}
             initial={false}
@@ -84,7 +88,8 @@ export function Slider({
           aria-label={label}
         />
 
-        <motion.div
+        {/* ✅ motion.div → MotionDiv */}
+        <MotionDiv
           className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 ${
             colorClasses[color].thumb
           } ${isFocused ? colorClasses[color].glow : ''} pointer-events-none`}

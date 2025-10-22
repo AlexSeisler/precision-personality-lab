@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { LogIn, UserPlus, Mail, Lock, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth/auth-context';
+
+// ✅ Updated import — lazy-loaded motion components
+import { MotionDiv } from '@/lib/lazy-motion';
 
 export function AuthForm() {
   const { signIn, signUp, loading } = useAuth();
@@ -40,23 +42,27 @@ export function AuthForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <motion.div
+      {/* ✅ motion.div → MotionDiv */}
+      <MotionDiv
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <motion.div
+          {/* ✅ inner motion.div → MotionDiv */}
+          <MotionDiv
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', delay: 0.1 }}
             className="inline-flex items-center justify-center w-20 h-20 mb-6 rounded-2xl gradient-precision ambient-glow-hero"
           >
             <Sparkles className="w-10 h-10 text-white" />
-          </motion.div>
+          </MotionDiv>
 
           <h1 className="text-4xl font-bold text-white mb-2">
-            <span className="gradient-text-precision">Precision + Personality Lab</span>
+            <span className="gradient-text-precision">
+              Precision + Personality Lab
+            </span>
           </h1>
           <p className="text-gray-400">
             {mode === 'signin' ? 'Welcome back' : 'Create your account'}
@@ -142,9 +148,12 @@ export function AuthForm() {
         </Card>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Master your model&apos;s mind, control the precision, calibrate the creativity</p>
+          <p>
+            Master your model&apos;s mind, control the precision, calibrate the
+            creativity
+          </p>
         </div>
-      </motion.div>
+      </MotionDiv>
     </div>
   );
 }

@@ -1,12 +1,15 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Sparkles, Sliders, FlaskConical, BarChart3, ArrowRight, Zap, Target, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AuthForm } from '@/components/auth/auth-form';
 import { useAuth } from '@/lib/auth/auth-context';
+
+// ✅ Lazy import Framer Motion wrapper (deferred load)
+import { MotionDiv } from '@/lib/lazy-motion';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -25,31 +28,34 @@ export default function Home() {
   if (!user) {
     return <AuthForm />;
   }
+
   return (
     <div className="w-full">
       <section className="relative py-20 lg:py-32">
         <div className="px-6 md:px-8">
-          <motion.div
+
+          {/* Hero Section */}
+          <MotionDiv
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <motion.div
+            <MotionDiv
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring' }}
               className="inline-flex items-center justify-center w-20 h-20 mb-6 rounded-2xl gradient-precision"
             >
               <Sparkles className="w-10 h-10 text-white" />
-            </motion.div>
+            </MotionDiv>
 
             <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight">
               <span className="gradient-text-precision">Step Into the Lab</span>
             </h1>
 
             <p className="text-xl lg:text-2xl text-gray-300 mb-4 max-w-3xl mx-auto">
-              Master your model's mind, control the precision, calibrate the creativity
+              Master your model&apos;s mind, control the precision, calibrate the creativity
             </p>
 
             <p className="text-lg text-gray-400 mb-12 max-w-2xl mx-auto">
@@ -71,9 +77,10 @@ export default function Home() {
                 </Button>
               </Link>
             </div>
-          </motion.div>
+          </MotionDiv>
 
-          <motion.div
+          {/* Feature Cards */}
+          <MotionDiv
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
@@ -102,9 +109,10 @@ export default function Home() {
               color="purple"
               delay={0.6}
             />
-          </motion.div>
+          </MotionDiv>
 
-          <motion.div
+          {/* Why Section */}
+          <MotionDiv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7, duration: 0.6 }}
@@ -133,13 +141,14 @@ export default function Home() {
                 description="See real-time metrics, comparisons, and visual insights as you experiment"
               />
             </div>
-          </motion.div>
+          </MotionDiv>
         </div>
       </section>
     </div>
   );
 }
 
+/* ------------------------- FeatureCard ------------------------- */
 interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
@@ -162,7 +171,7 @@ function FeatureCard({ icon, title, description, color, delay }: FeatureCardProp
   };
 
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
@@ -177,10 +186,11 @@ function FeatureCard({ icon, title, description, color, delay }: FeatureCardProp
         <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
         <p className="text-gray-300">{description}</p>
       </Card>
-    </motion.div>
+    </MotionDiv>
   );
 }
 
+/* ------------------------- ValueProp ------------------------- */
 interface ValuePropProps {
   icon: React.ReactNode;
   title: string;

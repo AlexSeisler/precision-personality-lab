@@ -1,7 +1,6 @@
 "use client";
 
 import { Menu, Sparkles, LogOut, User, Archive, FlaskConical } from "lucide-react";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -9,6 +8,9 @@ import { useUIStore } from "@/store/ui-store";
 import { useCalibrationStore } from "@/store/calibration-store";
 import { useExperimentStore } from "@/store/experiment-store";
 import { supabase } from "@/lib/supabase/client";
+
+// ✅ Lazy motion import
+import { MotionDiv, MotionButton, MotionSpan } from "@/lib/lazy-motion";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -24,14 +26,13 @@ export function Header({ onMenuClick }: HeaderProps) {
   const clearCalibration = useCalibrationStore((s) => s.reset);
   const clearExperiment = useExperimentStore((s) => s.reset);
 
-  // --- handleSignOut replaces direct signOut call ---
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
       clearUI?.();
       clearCalibration?.();
       clearExperiment?.();
-      router.push("/"); // ✅ redirect to your sign-in page
+      router.push("/");
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -62,7 +63,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       "
     >
       {/* Left: Menu + Brand */}
-      <motion.div
+      <MotionDiv
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
@@ -76,14 +77,14 @@ export function Header({ onMenuClick }: HeaderProps) {
           <Menu className="w-5 h-5" />
         </button>
 
-        <motion.div
+        <MotionDiv
           className="flex items-center gap-3"
           whileHover={{ scale: 1.02 }}
           transition={{ type: "spring", stiffness: 400 }}
         >
           <div className="relative flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-[#4A8FFF]" />
-            <motion.div
+            <MotionDiv
               className="absolute inset-0 bg-[#4A8FFF]/20 rounded-full blur-lg"
               animate={{
                 scale: [1, 1.25, 1],
@@ -102,8 +103,8 @@ export function Header({ onMenuClick }: HeaderProps) {
             </h1>
             <p className="text-xs text-gray-400">GenAI Parameter Explorer</p>
           </div>
-        </motion.div>
-      </motion.div>
+        </MotionDiv>
+      </MotionDiv>
 
       {/* Center: Navigation */}
       {user && (
@@ -141,14 +142,14 @@ export function Header({ onMenuClick }: HeaderProps) {
         {user && (
           <>
             {/* Connection Status */}
-            <motion.div
+            <MotionDiv
               className="hidden lg:flex flex-col items-end gap-0.5 px-3 py-1.5 rounded-lg bg-black/40 border border-white/10"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center gap-2">
-                <motion.span
+                <MotionSpan
                   className={`text-xs font-medium ${
                     isRealtimeConnected ? "text-green-400" : "text-red-400"
                   }`}
@@ -161,7 +162,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                   }}
                 >
                   ●
-                </motion.span>
+                </MotionSpan>
                 <span className="text-xs font-medium text-gray-300">
                   {isRealtimeConnected ? "Live" : "Offline"}
                 </span>
@@ -169,20 +170,20 @@ export function Header({ onMenuClick }: HeaderProps) {
               <p className="text-[10px] text-gray-500">
                 Last sync: {formatSyncTime(lastSyncTime)}
               </p>
-            </motion.div>
+            </MotionDiv>
 
             {/* User Email */}
-            <motion.div
+            <MotionDiv
               className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10"
               whileHover={{ backgroundColor: "rgba(255,255,255,0.08)" }}
               transition={{ duration: 0.2 }}
             >
               <User className="w-4 h-4 text-[#4A8FFF]" />
               <span className="text-sm text-gray-300">{user.email}</span>
-            </motion.div>
+            </MotionDiv>
 
-            {/* ✅ Sign Out Button (fixed) */}
-            <motion.button
+            {/* Sign Out Button */}
+            <MotionButton
               onClick={handleSignOut}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#FF7E47]/50 text-sm text-gray-300 hover:text-white transition-all"
               whileHover={{ scale: 1.02 }}
@@ -190,7 +191,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Sign Out</span>
-            </motion.button>
+            </MotionButton>
           </>
         )}
       </div>
