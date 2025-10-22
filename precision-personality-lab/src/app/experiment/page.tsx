@@ -214,13 +214,22 @@ export default function ExperimentPage() {
           </div>
 
           <div className="flex gap-2 flex-wrap justify-end">
-            {isCalibrated && (
+            {/* ✅ Always show calibration button */}
+            {isCalibrated ? (
               <Button
                 onClick={() => setShowConfirm(true)}
-                className="bg-gradient-to-r from-[#4A8FFF] to-[#FF7E47] text-white hover:brightness-110"
+                className="bg-gradient-to-r from-[#4A8FFF] to-[#FF7E47] text-white hover:brightness-110 transition-all"
               >
                 <Sliders className="w-4 h-4 mr-1" />
                 Recalibrate
+              </Button>
+            ) : (
+              <Button
+                onClick={() => router.push('/calibration')}
+                className="bg-gradient-to-r from-[#4A8FFF] to-[#FF7E47] text-white hover:brightness-110 transition-all"
+              >
+                <Sliders className="w-4 h-4 mr-1" />
+                Calibrate
               </Button>
             )}
 
@@ -239,6 +248,7 @@ export default function ExperimentPage() {
             </Button>
           </div>
         </div>
+
 
         {/* --- Main content --- */}
         <div className="grid lg:grid-cols-3 gap-6">

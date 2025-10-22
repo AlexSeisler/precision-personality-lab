@@ -34,6 +34,7 @@ export default function CalibrationPage() {
   const { addToast } = useUIStore();
 
   const [localAnswer, setLocalAnswer] = useState<string>('');
+  const [submitting, setSubmitting] = useState(false);
 
   const questions = calibrationMode === 'quick' ? quickCalibrationQuestions : deepCalibrationQuestions;
   const currentQuestion = questions[currentQuestionIndex];
@@ -75,55 +76,77 @@ export default function CalibrationPage() {
     }
   };
 
+  /**
+   * 🧩 Complete Calibration
+   * Guards against Supabase hydration lag and prevents null-user submissions.
+   */
   const completeCalibration = async () => {
-    const allAnswers = [...answers, {
-      questionId: currentQuestion.id,
-      answer: localAnswer,
-      type: currentQuestion.type,
-    }];
+    setSubmitting(true);
+
+    const allAnswers = [
+      ...answers,
+      {
+        questionId: currentQuestion.id,
+        answer: localAnswer,
+        type: currentQuestion.type,
+      },
+    ];
 
     const ranges = deriveParameterRanges(allAnswers);
     setParameterRanges(ranges);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Guard: ensure Supabase user context is ready
+      let { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-        const { data: calibration, error } = await supabase
-          .from('calibrations')
-          .insert({
-            user_id: user.id,
-            answers: JSON.stringify(allAnswers),
-            temperature_min: ranges.temperature.min,
-            temperature_max: ranges.temperature.max,
-            top_p_min: ranges.topP.min,
-            top_p_max: ranges.topP.max,
-            max_tokens_min: ranges.maxTokens.min,
-            max_tokens_max: ranges.maxTokens.max,
-            frequency_penalty_min: ranges.frequencyPenalty.min,
-            frequency_penalty_max: ranges.frequencyPenalty.max,
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Failed to save calibration:', error);
-          addToast('Calibration completed but failed to save', 'warning');
-        } else if (calibration) {
-          setCalibrationId(calibration.id);
-          await logAuditEvent('calibration_completed', {
-            calibration_id: calibration.id,
-            mode: calibrationMode,
-          });
-          addToast('Calibration complete! Your parameter ranges have been saved.', 'success');
-        }
+      if (!user) {
+        // Wait for Supabase hydration (production lag guard)
+        await new Promise((res) => setTimeout(res, 500));
+        ({ data: { user } } = await supabase.auth.getUser());
       }
+
+      if (!user) {
+        addToast('Authentication still loading. Please try again in a moment.', 'warning');
+        setSubmitting(false);
+        return;
+      }
+
+      const { data: calibration, error } = await supabase
+        .from('calibrations')
+        .insert({
+          user_id: user.id,
+          answers: JSON.stringify(allAnswers),
+          temperature_min: ranges.temperature.min,
+          temperature_max: ranges.temperature.max,
+          top_p_min: ranges.topP.min,
+          top_p_max: ranges.topP.max,
+          max_tokens_min: ranges.maxTokens.min,
+          max_tokens_max: ranges.maxTokens.max,
+          frequency_penalty_min: ranges.frequencyPenalty.min,
+          frequency_penalty_max: ranges.frequencyPenalty.max,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Failed to save calibration:', error);
+        addToast('Calibration completed but failed to save', 'warning');
+      } else if (calibration) {
+        setCalibrationId(calibration.id);
+        await logAuditEvent('calibration_completed', {
+          calibration_id: calibration.id,
+          mode: calibrationMode,
+        });
+        addToast('Calibration complete! Your parameter ranges have been saved.', 'success');
+      }
+
+      setCalibrated(true);
     } catch (error) {
       console.error('Calibration save error:', error);
       addToast('Calibration completed but failed to save', 'warning');
+    } finally {
+      setSubmitting(false);
     }
-
-    setCalibrated(true);
   };
 
   const handleRecalibrate = () => {
@@ -131,32 +154,33 @@ export default function CalibrationPage() {
     setCurrentQuestionIndex(0);
     setLocalAnswer('');
   };
+
   useEffect(() => {
-    router.prefetch("/experiment");
+    router.prefetch('/experiment');
   }, [router]);
 
   const handleProceedToExperiment = () => {
     setTimeout(() => router.push('/experiment'), 150);
   };
 
-
   if (!currentQuestion && !isCalibrated) {
     return (
-      <div className="py-8">
-        <div className="px-6 md:px-8 text-center">
-          <p className="text-gray-400">Loading calibration...</p>
-        </div>
+      <div className="py-8 text-center text-gray-400">
+        <p>Loading calibration...</p>
       </div>
     );
   }
 
+  // ✅ Calibration completed state
   if (isCalibrated && parameterRanges) {
-    return <CalibrationResultsView
-      ranges={parameterRanges}
-      insights={getCalibrationInsights(answers)}
-      onRecalibrate={handleRecalibrate}
-      onProceed={handleProceedToExperiment}
-    />;
+    return (
+      <CalibrationResultsView
+        ranges={parameterRanges}
+        insights={getCalibrationInsights(answers)}
+        onRecalibrate={handleRecalibrate}
+        onProceed={handleProceedToExperiment}
+      />
+    );
   }
 
   return (
@@ -168,9 +192,7 @@ export default function CalibrationPage() {
               <Sliders className="w-6 h-6 text-[#4A8FFF]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white glow-blue">
-                Calibration Console
-              </h1>
+              <h1 className="text-3xl font-bold text-white glow-blue">Calibration Console</h1>
               <p className="text-gray-400 mt-1">
                 Question {currentQuestionIndex + 1} of {questions.length}
               </p>
@@ -186,6 +208,16 @@ export default function CalibrationPage() {
               title="Deep Mode coming soon"
             >
               Switch to Deep Mode
+            </Button>
+
+            {/* ✅ Added navigation to restart calibration */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/calibration')}
+              className="cursor-pointer"
+            >
+              Restart Calibration
             </Button>
           </div>
 
@@ -211,9 +243,7 @@ export default function CalibrationPage() {
             transition={{ duration: 0.3 }}
           >
             <Card className="p-8 mb-6">
-              <h2 className="text-2xl font-bold text-white mb-6">
-                {currentQuestion.question}
-              </h2>
+              <h2 className="text-2xl font-bold text-white mb-6">{currentQuestion.question}</h2>
 
               {currentQuestion.type === 'multiple-choice' && currentQuestion.options ? (
                 <div className="space-y-3">
@@ -223,19 +253,18 @@ export default function CalibrationPage() {
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
                       onClick={() => setLocalAnswer(option)}
-                      className={`
-                        w-full p-4 rounded-lg text-left transition-all
-                        ${localAnswer === option
+                      className={`w-full p-4 rounded-lg text-left transition-all ${
+                        localAnswer === option
                           ? 'bg-[#4A8FFF]/20 border-2 border-[#4A8FFF] text-white'
                           : 'bg-white/5 border-2 border-white/10 text-gray-300 hover:bg-white/10'
-                        }
-                      `}
+                      }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`
-                          w-5 h-5 rounded-full border-2 flex items-center justify-center
-                          ${localAnswer === option ? 'border-[#4A8FFF] bg-[#4A8FFF]' : 'border-gray-500'}
-                        `}>
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            localAnswer === option ? 'border-[#4A8FFF] bg-[#4A8FFF]' : 'border-gray-500'
+                          }`}
+                        >
                           {localAnswer === option && (
                             <motion.div
                               initial={{ scale: 0 }}
@@ -260,20 +289,22 @@ export default function CalibrationPage() {
             </Card>
 
             <div className="flex justify-between">
-              <Button
-                variant="ghost"
-                onClick={handlePrevious}
-                disabled={currentQuestionIndex === 0}
-              >
+              <Button variant="ghost" onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
                 <ChevronLeft className="w-5 h-5" />
                 Previous
               </Button>
 
-              <Button onClick={handleNext}>
-                {currentQuestionIndex === questions.length - 1 ? 'Complete Calibration' : 'Next'}
-                {currentQuestionIndex !== questions.length - 1 && (
-                  <ChevronRight className="w-5 h-5" />
-                )}
+              <Button
+                onClick={handleNext}
+                disabled={submitting}
+                className={submitting ? 'opacity-70 cursor-not-allowed' : ''}
+              >
+                {currentQuestionIndex === questions.length - 1
+                  ? submitting
+                    ? 'Submitting...'
+                    : 'Complete Calibration'
+                  : 'Next'}
+                {currentQuestionIndex !== questions.length - 1 && <ChevronRight className="w-5 h-5" />}
               </Button>
             </div>
           </motion.div>
@@ -294,8 +325,9 @@ interface CalibrationResultsViewProps {
   onRecalibrate: () => void;
   onProceed: () => void;
 }
-
 function CalibrationResultsView({ ranges, insights, onRecalibrate, onProceed }: CalibrationResultsViewProps) {
+  const router = useRouter();
+
   return (
     <div className="w-full">
       <div className="px-6 md:px-8">
@@ -374,7 +406,7 @@ function CalibrationResultsView({ ranges, insights, onRecalibrate, onProceed }: 
             </ul>
           </Card>
 
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -395,8 +427,25 @@ function CalibrationResultsView({ ranges, insights, onRecalibrate, onProceed }: 
               transition={{ delay: 0.7 }}
             >
               <Button variant="secondary" onClick={onRecalibrate} size="lg">
-                <RefreshCw className="w-5 h-5" />
+                <RefreshCw className="w-5 h-5 mr-2" />
                 Recalibrate
+              </Button>
+            </motion.div>
+
+            {/* 🚀 Added: "Start Calibration" navigation for users who skipped calibration */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={() => router.push('/calibration')}
+                className="text-gray-400 hover:text-white"
+              >
+                <Sliders className="w-5 h-5 mr-2" />
+                Start New Calibration
               </Button>
             </motion.div>
           </div>
@@ -406,6 +455,10 @@ function CalibrationResultsView({ ranges, insights, onRecalibrate, onProceed }: 
   );
 }
 
+/**
+ * 📊 Parameter Range Card
+ * Displays each calibration dimension and its computed range.
+ */
 interface ParameterRangeCardProps {
   label: string;
   min: number;
@@ -422,7 +475,7 @@ function ParameterRangeCard({ label, min, max, description, color }: ParameterRa
   };
 
   return (
-    <Card className={`p-6 bg-gradient-to-br ${colorClasses[color]}`}>
+    <Card className={`p-6 bg-gradient-to-br ${colorClasses[color]} border rounded-xl shadow-lg`}>
       <h3 className="text-lg font-bold text-white mb-2">{label}</h3>
       <p className="text-sm text-gray-400 mb-4">{description}</p>
       <div className="flex items-baseline gap-2">
