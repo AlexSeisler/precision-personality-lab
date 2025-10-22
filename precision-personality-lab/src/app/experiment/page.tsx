@@ -114,6 +114,7 @@ export default function ExperimentPage() {
 
     if (!currentCalibrationId) {
       addToast('No calibration found. Please complete calibration first.', 'error');
+      router.prefetch("/calibration");
       router.push('/calibration');
       return;
     }

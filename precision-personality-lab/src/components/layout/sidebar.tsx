@@ -83,9 +83,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch
                   onClick={onClose}
                   aria-label={`Navigate to ${item.label}`}
-                  aria-current={isActive ? 'page' : undefined}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <motion.div
                     className={`
@@ -113,10 +114,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       />
                     )}
 
-                    <Icon className="w-5 h-5 relative z-10" />
-                    <span className="font-medium relative z-10">
-                      {item.label}
-                    </span>
+                    <Icon className="w-5 h-5 relative z-10" aria-hidden="true" />
+                    <span className="font-medium relative z-10">{item.label}</span>
 
                     <ChevronRight
                       className={`
@@ -128,9 +127,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             : "opacity-0 group-hover:opacity-50"
                         }
                       `}
+                      aria-hidden="true"
                     />
                   </motion.div>
                 </Link>
+
               );
             })}
           </nav>

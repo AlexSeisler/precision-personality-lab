@@ -93,7 +93,7 @@ export default function CalibrationPage() {
           .from('calibrations')
           .insert({
             user_id: user.id,
-            answers: allAnswers,
+            answers: JSON.stringify(allAnswers),
             temperature_min: ranges.temperature.min,
             temperature_max: ranges.temperature.max,
             top_p_min: ranges.topP.min,
@@ -131,10 +131,14 @@ export default function CalibrationPage() {
     setCurrentQuestionIndex(0);
     setLocalAnswer('');
   };
+  useEffect(() => {
+    router.prefetch("/experiment");
+  }, [router]);
 
   const handleProceedToExperiment = () => {
-    router.push('/experiment');
+    setTimeout(() => router.push('/experiment'), 150);
   };
+
 
   if (!currentQuestion && !isCalibrated) {
     return (

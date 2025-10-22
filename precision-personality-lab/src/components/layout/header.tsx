@@ -111,18 +111,24 @@ export function Header({ onMenuClick }: HeaderProps) {
         <nav className="hidden md:flex items-center gap-2 ml-8">
           <Link
             href="/dashboard"
+            prefetch
+            aria-label="Go to Dashboard"
+            aria-current={isDashboard ? "page" : undefined}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
               isDashboard
                 ? "bg-[#4A8FFF]/20 border border-[#4A8FFF]/50 text-[#4A8FFF]"
                 : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
             }`}
           >
-            <Archive className="w-4 h-4" />
+            <Archive className="w-4 h-4" aria-hidden="true" />
             <span>Dashboard</span>
           </Link>
 
+
+            
           {(isDashboard || !isExperiment) && (
             <button
+              
               onClick={() => router.push("/experiment")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
                 isExperiment

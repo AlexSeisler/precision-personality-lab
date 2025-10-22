@@ -64,14 +64,14 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/calibration">
+              <Link href="/calibration" prefetch>
                 <Button size="lg" className="group">
                   Start Calibration
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
 
-              <Link href="/experiment">
+              <Link href="/experiment" prefetch>
                 <Button size="lg" variant="secondary">
                   Jump to Experiment
                 </Button>
