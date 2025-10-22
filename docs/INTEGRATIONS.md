@@ -1,5 +1,5 @@
-# 🔗 PRECISION + PERSONALITY LAB — SERVICE & FRAMEWORK INTEGRATIONS  
-### *Version 2.4 — End-to-End System Integration Map*
+# 🔗 PRECISION + PERSONALITY LAB - SERVICE & FRAMEWORK INTEGRATIONS  
+### *Version 2.4 - End-to-End System Integration Map*
 
 ---
 
@@ -51,7 +51,7 @@ The **Next.js framework** serves as both the **frontend renderer** and the **API
 ## 🗄️ SUPABASE BACKEND
 
 ### Purpose
-Supabase acts as the **secure, real-time backend** — managing **auth**, **storage**, and **database operations**.
+Supabase acts as the **secure, real-time backend**, managing **auth**, **storage**, and **database operations**.
 
 ### Integrated Features
 | Feature | Module | Description |
@@ -126,7 +126,7 @@ Persists across navigation boundaries without Redux overhead.
 
 ---
 
-## 🎨 UI LAYER — TAILWINDCSS + SHADCN/UI
+## 🎨 UI LAYER - TAILWINDCSS + SHADCN/UI
 
 ### Purpose
 Provide a modern, consistent, and accessible interface.
@@ -137,15 +137,15 @@ Provide a modern, consistent, and accessible interface.
 - **Lucide Icons:** used for tooltips, metrics, and navigation clarity.
 
 ### Thematic System
-- **Precision Blue** — trust, measurement, structure  
-- **Neural Orange** — creativity, warmth, flow  
+- **Precision Blue** - trust, measurement, structure  
+- **Neural Orange** - creativity, warmth, flow  
 
 ---
 
 ## 💫 FRAMER MOTION (LAZY LOADED)
 
 ### Purpose
-Adds animation and motion design — imported dynamically to reduce bundle size.
+Adds animation and motion design, imported dynamically to reduce bundle size.
 
 ### Integration
 ```tsx
@@ -167,14 +167,14 @@ export const MotionDiv = dynamic(() => import("framer-motion").then(m => m.motio
 Render visual summaries of experiment metrics.
 
 **Charts:**  
-- `RadarChart` — compare creativity/coherence across sessions.  
-- `BarChart` — visualize per-experiment response variation.  
+- `RadarChart` - compare creativity/coherence across sessions.  
+- `BarChart` - visualize per-experiment response variation.  
 
 **Data Source:** Derived from `analytics_summaries` (Supabase) and `useMetricsStore`.
 
 ---
 
-## ☁️ DEPLOYMENT — DOCKER + VERCEL
+## ☁️ DEPLOYMENT - DOCKER + VERCEL
 
 ### Architecture
 The project is containerized via Docker and deployed to Vercel with automatic Edge SSR.
