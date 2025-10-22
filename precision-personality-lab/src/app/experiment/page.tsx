@@ -282,7 +282,6 @@ export default function ExperimentPage() {
 
               <Button
                 onClick={handleGenerate}
-                isLoading={isGenerating}
                 disabled={isGenerating || !currentPrompt.trim()}
                 className="w-full"
                 size="lg"
@@ -299,6 +298,7 @@ export default function ExperimentPage() {
                   </>
                 )}
               </Button>
+
             </Card>
 
             {/* ✅ motion.div → MotionDiv */}
