@@ -334,3 +334,29 @@ a:focus-visible {
 .interactive-glow:active {
   box-shadow: 0 0 30px rgba(74, 143, 255, 0.6);
 }
+
+/* --- Global Pointer Fix --- */
+button,
+[role="button"],
+a,
+[data-clickable="true"],
+input[type="button"],
+input[type="submit"] {
+  cursor: pointer !important;
+}
+
+/* Disabled buttons should show not-allowed cursor */
+button:disabled,
+[disabled] {
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+/* Icons or divs that act like buttons (e.g. delete/trash) */
+.icon-button,
+svg[role="button"],
+svg[data-action],
+div[data-action],
+div[role="button"] {
+  cursor: pointer !important;
+}

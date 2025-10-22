@@ -81,15 +81,41 @@ export default function DashboardPage() {
     }
   });
 
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user]);
+// --- Dashboard Data Loader (patched) ---
+useEffect(() => {
+  let mounted = true;
 
-  const loadDashboardData = async () => {
-  if (!user) return; // ✅ added guard
+  const loadData = async () => {
+    try {
+      // ✅ Ensure Supabase session is fully restored
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+      if (!session || !session.user) {
+        console.warn('⚠️ No active session found, skipping dashboard fetch.');
+        return;
+      }
+
+      const currentUser = session.user;
+      await loadDashboardData(currentUser);
+    } catch (err) {
+      console.error('Dashboard init error:', err);
+    }
+  };
+
+  loadData();
+
+  // ✅ Cleanup guard
+  return () => {
+    mounted = false;
+  };
+}, []);
+
+// --- Updated loader function ---
+const loadDashboardData = async (activeUser: any) => {
+  if (!activeUser) return; // Guard against null users
   setLoading(true);
+
   try {
     const { data: experimentsData, error: experimentsError } = await supabase
       .from('experiments')
@@ -100,8 +126,8 @@ export default function DashboardPage() {
 
     setExperiments(experimentsData || []);
 
-    // ✅ safe — TS knows user is non-null
-    const calibrationsData = await getAllCalibrations(user.id);
+    // ✅ Fetch calibrations only after experiments
+    const calibrationsData = await getAllCalibrations(activeUser.id);
     setCalibrations(calibrationsData);
   } catch (error) {
     console.error('Failed to load dashboard data:', error);
@@ -110,6 +136,7 @@ export default function DashboardPage() {
     setLoading(false);
   }
 };
+
 
 
   const handleExport = async (format: 'csv' | 'json') => {
