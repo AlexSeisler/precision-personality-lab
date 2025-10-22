@@ -6,6 +6,12 @@ import { supabase } from '@/lib/supabase/client';
 import { useUIStore } from '@/store/ui-store';
 import { logAuditEvent } from '@/lib/api/audit-logs';
 
+/**
+ * 🧠 AuthContext
+ * Provides Supabase auth state, session management, and lifecycle-safe listeners.
+ * This version ensures no hydration flicker by gating state updates behind hydration.
+ */
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -23,16 +29,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const { addToast } = useUIStore();
 
+  /**
+   * 🧩 Step 1: Mark when client hydration completes.
+   * Prevents premature Supabase listener execution during SSR rehydration.
+   */
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  /**
+   * 🧩 Step 2: Initialize Supabase session and listen for auth state changes.
+   * This entire block runs only after hydration to avoid SSR timing issues.
+   */
+  useEffect(() => {
+    if (!hydrated) return; // Wait until browser hydration completes
     let mounted = true;
 
-    async function initSession() {
+    const initSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
         if (!mounted) return;
+
+        if (error) {
+          console.error('Error retrieving session:', error.message);
+          setLoading(false);
+          setAuthReady(false);
+          return;
+        }
 
         setSession(session);
         setUser(session?.user ?? null);
@@ -50,11 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         setAuthReady(false);
       }
-    }
+    };
 
     initSession();
 
-    // Listen for auth changes
+    /**
+     * 🧠 Supabase Auth State Listener
+     * Ensures that all session changes are captured after hydration.
+     */
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return;
@@ -69,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await logAuditEvent('sign_in', { email: session.user.email });
         } else if (event === 'SIGNED_OUT') {
           addToast('Signed out successfully', 'info');
+          setUser(null);
+          setSession(null);
         }
       }
     );
@@ -77,8 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [addToast]);
+  }, [hydrated, addToast]);
 
+  /**
+   * ✉️ Sign-In Flow — handles direct Supabase password authentication.
+   */
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -88,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await logAuditEvent('auth_error', {
           action: 'sign_in',
           email,
-          message: error.message
+          message: error.message,
         });
         return { error };
       }
@@ -99,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await logAuditEvent('auth_error', {
           action: 'sign_in',
           email,
-          message: 'No session returned'
+          message: 'No session returned',
         });
         return { error: err };
       }
@@ -109,24 +147,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await logAuditEvent('sign_in', { email: data.session.user.email });
       }
 
+      setUser(data.session.user);
+      setSession(data.session);
+      setAuthReady(true);
+
       return { error: null };
     } catch (error) {
       const err = error as Error;
       addToast(err.message, 'error');
       await logAuditEvent('auth_error', {
         action: 'sign_in',
-        message: err.message
+        message: err.message,
       });
       return { error: err };
     }
   };
 
+  /**
+   * ✉️ Sign-Up Flow — ensures production redirect URL is correct.
+   */
   const signUp = async (email: string, password: string) => {
     try {
+      const redirectUrl =
+        process.env.NEXT_PUBLIC_SITE_URL ??
+        'https://precision-personality-lab.vercel.app/auth/callback';
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}` },
+        options: { emailRedirectTo: redirectUrl },
       });
 
       if (error) {
@@ -134,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await logAuditEvent('auth_error', {
           action: 'sign_up',
           email,
-          message: error.message
+          message: error.message,
         });
         return { error };
       }
@@ -143,19 +192,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await logAuditEvent('sign_up', { email });
       }
 
-      addToast('Account created successfully!', 'success');
+      addToast('Verification email sent — check your inbox.', 'info');
       return { error: null };
     } catch (error) {
       const err = error as Error;
       addToast(err.message, 'error');
       await logAuditEvent('auth_error', {
         action: 'sign_up',
-        message: err.message
+        message: err.message,
       });
       return { error: err };
     }
   };
 
+  /**
+   * 🚪 Sign-Out Flow — clears session and logs audit event.
+   */
   const signOut = async () => {
     try {
       if (user?.id) {
@@ -164,6 +216,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) {
         addToast(error.message, 'error');
+      } else {
+        setUser(null);
+        setSession(null);
+        setAuthReady(false);
       }
     } catch (error) {
       console.error('Sign-out error:', error);
@@ -188,6 +244,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * 🪝 Custom hook — returns validated Auth context.
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
