@@ -360,3 +360,9 @@ div[data-action],
 div[role="button"] {
   cursor: pointer !important;
 }
+button,
+a,
+[role="button"],
+[tabindex]:not([tabindex="-1"]) {
+  cursor: pointer;
+}

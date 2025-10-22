@@ -113,9 +113,9 @@ export function Header({ onMenuClick }: HeaderProps) {
             href="/dashboard"
             prefetch
             aria-label="Go to Dashboard"
-            aria-current={isDashboard ? "page" : undefined}
+            aria-current={pathname === "/dashboard" ? "page" : undefined}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-              isDashboard
+              pathname === "/dashboard"
                 ? "bg-[#4A8FFF]/20 border border-[#4A8FFF]/50 text-[#4A8FFF]"
                 : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
             }`}
@@ -124,24 +124,46 @@ export function Header({ onMenuClick }: HeaderProps) {
             <span>Dashboard</span>
           </Link>
 
+          <button
+            onClick={() => router.push("/experiment")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+              pathname === "/experiment"
+                ? "bg-[#FF7E47]/20 border border-[#FF7E47]/50 text-[#FF7E47]"
+                : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <FlaskConical className="w-4 h-4" />
+            <span>Experiment Studio</span>
+          </button>
 
-            
-          {(isDashboard || !isExperiment) && (
-            <button
-              
-              onClick={() => router.push("/experiment")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-                isExperiment
-                  ? "bg-[#FF7E47]/20 border border-[#FF7E47]/50 text-[#FF7E47]"
-                  : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
-              }`}
+          {/* ✅ New Metrics Link */}
+          <button
+            onClick={() => router.push("/metrics")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+              pathname === "/metrics"
+                ? "bg-[#22C55E]/20 border border-[#22C55E]/50 text-[#22C55E]"
+                : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
-              <FlaskConical className="w-4 h-4" />
-              <span>Experiment Studio</span>
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 6h16M4 10h16M4 14h16M4 18h16"
+              />
+            </svg>
+            <span>Metrics</span>
+          </button>
         </nav>
       )}
+
 
       {/* Right: Status & User */}
       <div className="ml-auto flex items-center gap-3">
