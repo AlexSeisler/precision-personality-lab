@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
 import { AuthProvider } from "@/lib/auth/auth-context";
-import { AuthRedirectWatcher } from "@/components/system/AuthRedirectWatcher"; // 👈 Add this import
+import { AuthRedirectWatcher } from "@/components/system/AuthRedirectWatcher";
+import { SpeedInsights } from "@vercel/speed-insights/next"; // ✅ Added import
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,12 +32,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* 👇 This will catch /auth/callback redirects automatically */}
+        {/* 👇 Handles auth redirect watching */}
         <AuthRedirectWatcher />
 
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>
+
+        {/* ✅ Add Vercel Speed Insights tracking (must be inside <body>) */}
+        <SpeedInsights />
       </body>
     </html>
   );
