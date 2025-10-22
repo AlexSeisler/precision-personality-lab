@@ -1,5 +1,5 @@
-# 🔒 PRECISION + PERSONALITY LAB — SECURITY, AUTHENTICATION & COMPLIANCE OVERVIEW  
-### *Version 2.4 — Production Deployment Configuration*
+# 🔒 PRECISION + PERSONALITY LAB - SECURITY, AUTHENTICATION & COMPLIANCE OVERVIEW  
+### *Version 2.4 - Production Deployment Configuration*
 
 ---
 
@@ -96,7 +96,7 @@ for select
 using (auth.uid() = user_id);
 ```
 
-**Outcome:** Each user can only read, update, or delete their own records — ensuring total tenant isolation.
+**Outcome:** Each user can only read, update, or delete their own records, ensuring total tenant isolation.
 
 ---
 
@@ -248,6 +248,6 @@ The **Precision + Personality Lab** implements a multi-layer security model ensu
 - Resilient middleware protections  
 - Encrypted, authenticated LLM workflows  
 
-Security is not an afterthought — it’s embedded in the architecture.
+Security is not an afterthought, it’s embedded in the architecture.
 
 For further schema-level diagrams, see `/docs/ARCHITECTURE.md`.  
