@@ -18,14 +18,12 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-// ✅ Define strong typing for nav items
 type NavItem = {
-  href: `/${string}`; // ensures string starting with "/"
+  href: `/${string}`;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 };
 
-// ✅ All navigation items (including Metrics)
 const navItems: NavItem[] = [
   { href: "/", label: "Home", icon: Home },
   { href: "/calibration", label: "Calibration", icon: Sliders },
@@ -39,7 +37,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* ✅ Background overlay */}
+      {/* ✅ Overlay - pointer events only when visible */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -47,13 +45,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden cursor-pointer"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
             onClick={onClose}
+            style={{ pointerEvents: isOpen ? "auto" : "none" }}
           />
         )}
       </AnimatePresence>
 
-      {/* ✅ Sidebar panel */}
+      {/* ✅ Sidebar container */}
       <motion.aside
         initial={false}
         animate={{
@@ -64,10 +63,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           stiffness: 300,
           damping: 30,
         }}
-        className="fixed left-0 top-16 bottom-0 w-64 bg-black/40 backdrop-blur-xl border-r border-white/10 z-50 lg:translate-x-0 lg:static shadow-[4px_0_30px_rgba(0,0,0,0.1)]"
+        className="fixed left-0 top-16 bottom-0 w-64 bg-black/40 backdrop-blur-xl border-r border-white/10 z-50 shadow-[4px_0_30px_rgba(0,0,0,0.1)]"
+        style={{ pointerEvents: "auto" }} // allow clicking inside
       >
         <div className="flex flex-col h-full p-4">
-          {/* Mobile header */}
+          {/* Header for mobile */}
           <div className="flex items-center justify-between mb-6 lg:hidden">
             <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
               Navigation
@@ -81,7 +81,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </button>
           </div>
 
-          {/* ✅ Main nav items */}
+          {/* ✅ Nav Links */}
           <nav className="flex-1 space-y-2">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -97,25 +97,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   aria-current={isActive ? "page" : undefined}
                 >
                   <motion.div
-                    className={`
-                      relative flex items-center gap-3 px-4 py-3 rounded-lg
-                      transition-all duration-200 group
-                      ${
-                        isActive
-                          ? "bg-gradient-to-r from-[#4A8FFF]/20 to-[#FF7E47]/20 text-white border border-[#4A8FFF]/40 shadow-[0_0_20px_rgba(74,143,255,0.25)]"
-                          : "text-gray-300 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10"
-                      }
-                    `}
-                    style={{ cursor: "pointer" }}
-                    whileHover={{ x: 4, scale: 1.01 }}
+                    className={`relative flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                      isActive
+                        ? "bg-gradient-to-r from-[#4A8FFF]/20 to-[#FF7E47]/20 text-white border border-[#4A8FFF]/40 shadow-[0_0_20px_rgba(74,143,255,0.25)]"
+                        : "text-gray-300 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10"
+                    }`}
+                    style={{ cursor: "pointer", position: "relative" }}
+                    whileHover={{ x: 4, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
-                    {/* Animated active background */}
+                    {/* ✅ Background animation layer (non-blocking) */}
                     {isActive && (
                       <motion.div
                         layoutId="activeTab"
                         className="absolute inset-0 bg-gradient-to-r from-[#4A8FFF]/10 to-[#FF7E47]/10 rounded-lg"
+                        style={{ pointerEvents: "none" }} // ensure it never blocks clicks
                         transition={{
                           type: "spring",
                           stiffness: 500,
@@ -124,9 +121,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       />
                     )}
 
+                    {/* Icon + Label */}
                     <Icon className="w-5 h-5 relative z-10" aria-hidden="true" />
-                    <span className="font-medium relative z-10">{item.label}</span>
+                    <span className="font-medium relative z-10">
+                      {item.label}
+                    </span>
 
+                    {/* Chevron on hover */}
                     <ChevronRight
                       className={`w-4 h-4 ml-auto relative z-10 transition-opacity ${
                         isActive
@@ -141,7 +142,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             })}
           </nav>
 
-          {/* ✅ Footer info card */}
+          {/* Footer Info */}
           <div className="pt-4 border-t border-white/10">
             <div className="p-4 rounded-lg bg-gradient-to-br from-[#4A8FFF]/10 to-[#FF7E47]/10 border border-[#4A8FFF]/20">
               <p className="text-xs text-gray-400 mb-1">Assessment Project</p>
