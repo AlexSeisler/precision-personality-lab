@@ -210,15 +210,6 @@ export default function CalibrationPage() {
               Switch to Deep Mode
             </Button>
 
-            {/* ✅ Added navigation to restart calibration */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/calibration')}
-              className="cursor-pointer"
-            >
-              Restart Calibration
-            </Button>
           </div>
 
         </div>
@@ -438,15 +429,6 @@ function CalibrationResultsView({ ranges, insights, onRecalibrate, onProceed }: 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
             >
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={() => router.push('/calibration')}
-                className="text-gray-400 hover:text-white"
-              >
-                <Sliders className="w-5 h-5 mr-2" />
-                Start New Calibration
-              </Button>
             </motion.div>
           </div>
         </motion.div>
