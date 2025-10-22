@@ -28,15 +28,18 @@ export function ParameterControls({ parameters, onChange }: ParameterControlsPro
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="text-sm text-gray-300 font-medium">Temperature</label>
-            <span className="text-gray-400 font-mono">{parameters.temperature.toFixed(2)}</span>
+            <span className="text-gray-400 font-mono">
+              {parameters.temperature.toFixed(2)}
+            </span>
           </div>
           <Slider
+            label="Temperature"
             value={parameters.temperature}
             onChange={(v) => handleSliderChange('temperature', v)}
             min={0}
             max={1.5}
             step={0.05}
-            description="Controls randomness. Higher = more creative"
+            description="Controls randomness. Higher = more creative."
             color="orange"
           />
         </div>
@@ -45,15 +48,18 @@ export function ParameterControls({ parameters, onChange }: ParameterControlsPro
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="text-sm text-gray-300 font-medium">Top P</label>
-            <span className="text-gray-400 font-mono">{parameters.topP.toFixed(2)}</span>
+            <span className="text-gray-400 font-mono">
+              {parameters.topP.toFixed(2)}
+            </span>
           </div>
           <Slider
+            label="Top P"
             value={parameters.topP}
             onChange={(v) => handleSliderChange('topP', v)}
             min={0.1}
             max={1}
             step={0.05}
-            description="Nucleus sampling. Lower = more focused"
+            description="Nucleus sampling. Lower = more focused."
             color="blue"
           />
         </div>
@@ -65,12 +71,13 @@ export function ParameterControls({ parameters, onChange }: ParameterControlsPro
             <span className="text-gray-400 font-mono">{parameters.maxTokens}</span>
           </div>
           <Slider
+            label="Max Tokens"
             value={parameters.maxTokens}
             onChange={(v) => handleSliderChange('maxTokens', v)}
             min={100}
             max={4000}
             step={50}
-            description="Maximum response length"
+            description="Maximum response length."
             color="purple"
           />
         </div>
@@ -78,16 +85,21 @@ export function ParameterControls({ parameters, onChange }: ParameterControlsPro
         {/* Frequency Penalty */}
         <div>
           <div className="flex justify-between items-center mb-1">
-            <label className="text-sm text-gray-300 font-medium">Frequency Penalty</label>
-            <span className="text-gray-400 font-mono">{parameters.frequencyPenalty.toFixed(2)}</span>
+            <label className="text-sm text-gray-300 font-medium">
+              Frequency Penalty
+            </label>
+            <span className="text-gray-400 font-mono">
+              {parameters.frequencyPenalty.toFixed(2)}
+            </span>
           </div>
           <Slider
+            label="Frequency Penalty"
             value={parameters.frequencyPenalty}
             onChange={(v) => handleSliderChange('frequencyPenalty', v)}
             min={0}
             max={2}
             step={0.1}
-            description="Reduces repetition of words"
+            description="Reduces repetition of words."
             color="blue"
           />
         </div>
@@ -96,15 +108,18 @@ export function ParameterControls({ parameters, onChange }: ParameterControlsPro
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="text-sm text-gray-300 font-medium">Presence Penalty</label>
-            <span className="text-gray-400 font-mono">{parameters.presencePenalty.toFixed(2)}</span>
+            <span className="text-gray-400 font-mono">
+              {parameters.presencePenalty.toFixed(2)}
+            </span>
           </div>
           <Slider
+            label="Presence Penalty"
             value={parameters.presencePenalty}
             onChange={(v) => handleSliderChange('presencePenalty', v)}
             min={0}
             max={2}
             step={0.1}
-            description="Encourages new topics"
+            description="Encourages new topics."
             color="orange"
           />
         </div>

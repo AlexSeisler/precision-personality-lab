@@ -49,28 +49,37 @@ function convertToCSV(data: ExportData[]): string {
   return [headers.join(','), ...rows].join('\n');
 }
 
+/**
+ * Export user experiments (optionally only selected ones)
+ */
 export async function exportUserData(
-  format: 'csv' | 'json'
+  format: 'csv' | 'json',
+  selectedExperimentIds?: string[]
 ): Promise<string | null> {
   try {
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      throw new Error('No authenticated user');
-    }
+    if (!user) throw new Error('No authenticated user');
 
-    const { data: experiments, error } = await supabase
+    let query = supabase
       .from('experiments')
       .select('*')
       .eq('user_id', user.id)
       .eq('discarded', false)
       .order('created_at', { ascending: false });
 
+    // ✅ If specific experiment IDs were provided, only export those
+    if (selectedExperimentIds && selectedExperimentIds.length > 0) {
+      query = query.in('id', selectedExperimentIds);
+    }
+
+    const { data: experiments, error } = await query;
     if (error) throw error;
 
     const exportData = experiments || [];
+    const fileName = `precision_lab_export_${user.id.slice(0, 8)}_${Date.now()}.${format}`;
 
     let content: string;
     let mimeType: string;
@@ -84,8 +93,6 @@ export async function exportUserData(
     }
 
     const blob = new Blob([content], { type: mimeType });
-    const fileName = `precision_lab_export_${user.id.slice(0, 8)}_${Date.now()}.${format}`;
-
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -99,6 +106,7 @@ export async function exportUserData(
       format,
       count: exportData.length,
       file_name: fileName,
+      selected_count: selectedExperimentIds?.length ?? null,
     });
 
     return fileName;
@@ -156,9 +164,7 @@ export async function exportFullUserData(): Promise<string | null> {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      throw new Error('No authenticated user');
-    }
+    if (!user) throw new Error('No authenticated user');
 
     const [experimentsResult, analyticsResult, auditsResult] = await Promise.all([
       supabase

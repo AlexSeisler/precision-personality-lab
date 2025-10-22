@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import {
   BarChart3,
   Download,
-  Search,
   Filter,
   Calendar,
   Archive,
@@ -29,10 +28,8 @@ import { getAllCalibrations } from '@/lib/api/calibrations';
 import { useRealtimeExperiments } from '@/lib/realtime/hooks';
 import type { Database } from '@/lib/supabase/types';
 
-// ✅ Updated import — lazy-loaded motion components
-import {
-  MotionDiv,
-} from '@/lib/lazy-motion';
+// ✅ Lazy-loaded motion components for smaller initial bundles
+import { MotionDiv } from '@/lib/lazy-motion';
 
 type ExperimentRow = Database['public']['Tables']['experiments']['Row'];
 type CalibrationRow = Database['public']['Tables']['calibrations']['Row'];
@@ -46,36 +43,42 @@ export default function DashboardPage() {
     addExperiment,
     removeExperiment,
     updateExperiment,
-    setFilters,
-    filters,
-    selectedExperiment,
-    setSelectedExperiment,
-    isLoading,
     setLoading,
+    isLoading,
     selectedExperiments,
-    toggleExperimentSelection,
     clearSelections,
+    toggleExperimentSelection,
   } = useDashboardStore();
 
   const [calibrations, setCalibrations] = useState<CalibrationRow[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  useRealtimeExperiments({
-    onInsert: (payload) => {
-      addExperiment(payload.new as ExperimentRow);
-      addToast('New experiment synced', 'success', 2000);
-    },
-    onUpdate: (payload) => {
-      updateExperiment(
-        (payload.new as ExperimentRow).id,
-        payload.new as Partial<ExperimentRow>
-      );
-    },
-    onDelete: (payload) => {
-      removeExperiment((payload.old as ExperimentRow).id);
-      addToast('Experiment removed', 'info', 2000);
-    },
+  // ✅ FIXED: Hook signature simplified for TS compliance
+  useRealtimeExperiments((payload: any) => {
+    const eventType = payload.eventType || payload.type;
+
+    switch (eventType) {
+      case 'INSERT':
+        addExperiment(payload.new as ExperimentRow);
+        addToast('New experiment synced', 'success', 2000);
+        break;
+
+      case 'UPDATE':
+        updateExperiment(
+          (payload.new as ExperimentRow).id,
+          payload.new as Partial<ExperimentRow>
+        );
+        break;
+
+      case 'DELETE':
+        removeExperiment((payload.old as ExperimentRow).id);
+        addToast('Experiment removed', 'info', 2000);
+        break;
+
+      default:
+        console.warn('Unhandled realtime event:', payload);
+    }
   });
 
   useEffect(() => {
@@ -85,26 +88,29 @@ export default function DashboardPage() {
   }, [user]);
 
   const loadDashboardData = async () => {
-    setLoading(true);
-    try {
-      const { data: experimentsData, error: experimentsError } = await supabase
-        .from('experiments')
-        .select('*')
-        .order('created_at', { ascending: false });
+  if (!user) return; // ✅ added guard
+  setLoading(true);
+  try {
+    const { data: experimentsData, error: experimentsError } = await supabase
+      .from('experiments')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (experimentsError) throw experimentsError;
+    if (experimentsError) throw experimentsError;
 
-      setExperiments(experimentsData || []);
+    setExperiments(experimentsData || []);
 
-      const calibrationsData = await getAllCalibrations(user.id);
-      setCalibrations(calibrationsData);
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
-      addToast('Failed to load dashboard data', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+    // ✅ safe — TS knows user is non-null
+    const calibrationsData = await getAllCalibrations(user.id);
+    setCalibrations(calibrationsData);
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error);
+    addToast('Failed to load dashboard data', 'error');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleExport = async (format: 'csv' | 'json') => {
     setIsExporting(true);
@@ -119,7 +125,7 @@ export default function DashboardPage() {
         await exportUserData(format);
         addToast(`Exported all experiments (${format.toUpperCase()})`, 'success');
       }
-    } catch (error) {
+    } catch {
       addToast('Export failed', 'error');
     } finally {
       setIsExporting(false);
@@ -131,7 +137,7 @@ export default function DashboardPage() {
     try {
       const fileName = await exportFullUserData();
       addToast(`Full export complete: ${fileName}`, 'success', 3000);
-    } catch (error) {
+    } catch {
       addToast('Full export failed', 'error');
     } finally {
       setIsExporting(false);
@@ -143,7 +149,7 @@ export default function DashboardPage() {
       await discardExperiment(id);
       updateExperiment(id, { discarded: true, saved: false });
       addToast('Experiment discarded', 'info');
-    } catch (error) {
+    } catch {
       addToast('Failed to discard experiment', 'error');
     }
   };
@@ -153,7 +159,7 @@ export default function DashboardPage() {
       await saveExperiment(id);
       updateExperiment(id, { saved: true, discarded: false });
       addToast('Saved to Dashboard', 'success');
-    } catch (error) {
+    } catch {
       addToast('Failed to save experiment', 'error');
     }
   };
@@ -169,7 +175,6 @@ export default function DashboardPage() {
   return (
     <div className="w-full">
       <div className="px-6 md:px-8 py-8">
-        {/* ✅ motion.div replaced with MotionDiv */}
         <MotionDiv
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -190,7 +195,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-end">
               <Button
                 variant="secondary"
                 onClick={() => setShowFilters(!showFilters)}
@@ -201,12 +206,13 @@ export default function DashboardPage() {
 
               {selectedExperiments.length > 0 && (
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={clearSelections}
-                  className="text-gray-300 border-gray-600 hover:bg-gray-800"
+                  className="text-gray-300 border border-gray-600 hover:bg-gray-800"
                 >
                   Clear ({selectedExperiments.length})
                 </Button>
+
               )}
 
               <Button
@@ -283,7 +289,12 @@ interface ExperimentCardProps {
   onSave: () => void;
 }
 
-function ExperimentCard({ experiment, index, onDiscard, onSave }: ExperimentCardProps) {
+function ExperimentCard({
+  experiment,
+  index,
+  onDiscard,
+  onSave,
+}: ExperimentCardProps) {
   const { selectedExperiments, toggleExperimentSelection } = useDashboardStore();
 
   const params = experiment.parameters as {
@@ -298,7 +309,6 @@ function ExperimentCard({ experiment, index, onDiscard, onSave }: ExperimentCard
   const isSelected = selectedExperiments.includes(experiment.id);
 
   return (
-    // ✅ motion.div replaced with MotionDiv
     <MotionDiv
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -340,7 +350,10 @@ function ExperimentCard({ experiment, index, onDiscard, onSave }: ExperimentCard
               )}
               <span className="text-xs text-gray-400">
                 <Calendar className="inline w-3 h-3 mr-1" />
-                {new Date(experiment.created_at).toLocaleDateString()}
+                {experiment.created_at
+                  ? new Date(experiment.created_at).toLocaleDateString()
+                  : 'Unknown date'}
+
               </span>
             </div>
 
@@ -369,14 +382,16 @@ function ExperimentCard({ experiment, index, onDiscard, onSave }: ExperimentCard
             )}
             <Button
               size="sm"
-              variant="destructive"
+              variant="danger"
               onClick={(e) => {
                 e.stopPropagation();
                 onDiscard();
               }}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+
           </div>
         </div>
 

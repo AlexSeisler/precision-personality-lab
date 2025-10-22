@@ -22,8 +22,8 @@ import { useExperimentStore } from '@/store/experiment-store';
 import { useUIStore } from '@/store/ui-store';
 import { exportExperiment } from '@/lib/utils/export';
 
-// ✅ Updated import — use lazy-loaded motion wrappers
-import { MotionDiv, MotionSpan, MotionSection } from '@/lib/lazy-motion';
+// ✅ Lazy motion components (SSR-safe + tree-shaken)
+import { MotionDiv, MotionTr, MotionSpan, MotionSection } from '@/lib/lazy-motion';
 
 export default function MetricsPage() {
   const { currentResponses } = useExperimentStore();
@@ -161,7 +161,7 @@ export default function MetricsPage() {
           />
         </div>
 
-        {/* ✅ motion.div → MotionDiv */}
+        {/* ✅ Animated Metrics Section */}
         <MotionDiv
           className="grid lg:grid-cols-2 gap-6 mb-6"
           initial={{ opacity: 0 }}
@@ -250,47 +250,33 @@ export default function MetricsPage() {
           </MotionDiv>
         </MotionDiv>
 
+        {/* ✅ Fixed Animated Table */}
         <Card className="p-6">
-          <h2 className="text-xl font-bold text-white mb-4">
-            Response Details
-          </h2>
+          <h2 className="text-xl font-bold text-white mb-4">Response Details</h2>
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="text-left p-3 text-sm font-semibold text-gray-300">
-                    Response
-                  </th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-300">
-                    Temperature
-                  </th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-300">
-                    Top P
-                  </th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-300">
-                    Creativity
-                  </th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-300">
-                    Coherence
-                  </th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-300">
-                    Length
-                  </th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-300">Response</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-300">Temperature</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-300">Top P</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-300">Creativity</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-300">Coherence</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-300">Length</th>
                 </tr>
               </thead>
+
               <tbody>
                 {currentResponses.map((response, index) => (
-                  <MotionDiv
+                  <MotionTr
                     key={response.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.05 }}
                     className="border-b border-white/5 hover:bg-white/5 transition-colors"
-                    as="tr"
                   >
-                    <td className="p-3 text-sm text-white">
-                      Response {index + 1}
-                    </td>
+                    <td className="p-3 text-sm text-white">Response {index + 1}</td>
                     <td className="p-3 text-sm text-gray-300">
                       {response.parameters.temperature.toFixed(2)}
                     </td>
@@ -306,7 +292,7 @@ export default function MetricsPage() {
                     <td className="p-3 text-sm text-gray-300">
                       {response.metrics.length} words
                     </td>
-                  </MotionDiv>
+                  </MotionTr>
                 ))}
               </tbody>
             </table>
@@ -317,6 +303,7 @@ export default function MetricsPage() {
   );
 }
 
+/* ------------------ Metric Card ------------------ */
 interface MetricCardProps {
   label: string;
   value: number;

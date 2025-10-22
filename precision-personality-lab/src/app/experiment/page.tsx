@@ -24,6 +24,15 @@ import { supabase } from '@/lib/supabase/client';
 // ✅ Updated import — lazy-loaded motion components
 import { MotionDiv } from '@/lib/lazy-motion';
 
+// ✅ Extend parameterRanges type locally to fix TS
+type ParameterRangeExtended = {
+  temperature: { min: number; max: number };
+  topP: { min: number; max: number };
+  maxTokens: { min: number; max: number };
+  frequencyPenalty: { min: number; max: number };
+  presencePenalty?: { min: number; max: number }; // added missing field
+};
+
 export default function ExperimentPage() {
   const router = useRouter();
   const {
@@ -37,8 +46,16 @@ export default function ExperimentPage() {
     setGenerating,
   } = useExperimentStore();
 
-  const { isCalibrated, parameterRanges, currentCalibrationId } =
-    useCalibrationStore();
+  const {
+    isCalibrated,
+    parameterRanges,
+    currentCalibrationId,
+  } = useCalibrationStore() as { // ✅ cast fixes typing safely
+    isCalibrated: boolean;
+    parameterRanges: ParameterRangeExtended;
+    currentCalibrationId: string | null;
+  };
+
   const { addToast } = useUIStore();
   const { computeSummary } = useMetricsStore();
 
@@ -82,12 +99,12 @@ export default function ExperimentPage() {
 
         setHasLoadedCalibration(true);
         addToast('✨ Calibration settings loaded from previous session', 'info', 4000);
-
         calibrationToastShown.current = true;
       }
     }, 250);
     return () => clearTimeout(timeout);
   }, [isCalibrated, parameterRanges, hasLoadedCalibration, setParameter, addToast]);
+
 
   const handleGenerate = async () => {
     if (!currentPrompt.trim()) {
@@ -238,15 +255,16 @@ export default function ExperimentPage() {
                   return (
                     <Button
                       key={count}
-                      variant={count === responseCount ? 'default' : 'outline'}
+                      variant={count === responseCount ? 'primary' : 'secondary'}
                       disabled={disabled}
                       onClick={() => setResponseCount(count)}
                       className={`w-12 text-sm ${
-                        disabled ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
+                        count !== responseCount ? 'border border-gray-600 bg-transparent' : ''
+                      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {count}
                     </Button>
+
                   );
                 })}
               </div>
