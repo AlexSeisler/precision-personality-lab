@@ -6,19 +6,23 @@ import type { CalibrationAnswer, ParameterRange } from '@/types';
 type CalibrationRow = Database['public']['Tables']['calibrations']['Row'];
 type CalibrationInsert = Database['public']['Tables']['calibrations']['Insert'];
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// --- Safe telemetry stub (no DB writes)
 async function recordTelemetry(event: string, meta: Record<string, unknown>) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user?.id || !UUID_REGEX.test(user.id)) {
+      console.warn(`⚠️ Skipping telemetry (${event}) — invalid user`);
+      return;
+    }
 
-    await supabase.from('system_metrics').insert({
+    console.info('📊 Telemetry:', {
+      event,
       path: '/lib/api/calibrations',
-      method: event,
-      latency_ms: meta?.latency_ms || 0,
-      status: meta?.status || 200,
-      user_id: user.id,
-      extra: meta,
-      created_at: new Date().toISOString(),
+      user: user.id,
+      meta,
     });
   } catch (err) {
     console.warn('⚠️ telemetry log failed:', err);
@@ -36,7 +40,7 @@ export async function saveCalibration(
     await logAuditEvent('calibration_started', { mode });
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('No authenticated user');
+    if (!user?.id || !UUID_REGEX.test(user.id)) throw new Error('No authenticated user');
 
     const calibrationData: CalibrationInsert = {
       user_id: user.id,
@@ -57,7 +61,6 @@ export async function saveCalibration(
       insights,
     };
 
-    // Insert calibration
     const { data, error } = await supabase
       .from('calibrations')
       .insert(calibrationData)
@@ -97,13 +100,14 @@ export async function saveCalibration(
   }
 }
 
-export async function getLatestCalibration(userId: string): Promise<{
-  ranges: ParameterRange;
-  insights: string[];
-  mode: 'quick' | 'deep';
-  answers: CalibrationAnswer[];
-} | null> {
+export async function getLatestCalibration(userId: string) {
   const start = Date.now();
+
+  if (!userId || !UUID_REGEX.test(userId)) {
+    console.warn('⚠️ Invalid userId in getLatestCalibration');
+    return null;
+  }
+
   try {
     const { data, error } = await supabase
       .from('calibrations')
@@ -151,6 +155,12 @@ export async function getLatestCalibration(userId: string): Promise<{
 
 export async function getAllCalibrations(userId: string): Promise<CalibrationRow[]> {
   const start = Date.now();
+
+  if (!userId || !UUID_REGEX.test(userId)) {
+    console.warn('⚠️ Invalid userId in getAllCalibrations');
+    return [];
+  }
+
   try {
     const { data, error } = await supabase
       .from('calibrations')
@@ -178,13 +188,9 @@ export async function getAllCalibrations(userId: string): Promise<CalibrationRow
 export async function deleteCalibration(calibrationId: string) {
   const start = Date.now();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('No authenticated user');
+  if (!user?.id || !UUID_REGEX.test(user.id)) throw new Error('No authenticated user');
 
-  const { error } = await supabase
-    .from('calibrations')
-    .delete()
-    .eq('id', calibrationId);
-
+  const { error } = await supabase.from('calibrations').delete().eq('id', calibrationId);
   const latency_ms = Date.now() - start;
 
   if (error) {

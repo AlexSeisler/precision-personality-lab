@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FlaskConical, Sparkles, Loader2, Download, Sliders } from "lucide-react";
+import { FlaskConical, Sparkles, Loader2, Download, Sliders, RotateCcw } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -32,26 +32,23 @@ export default function ExperimentPage() {
   const { addToast } = useUIStore();
   const { computeSummary } = useMetricsStore();
 
-  // 🆕 Add local state for multi-response count
   const [responseCount, setResponseCount] = useState(1);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [hasLoadedCalibration, setHasLoadedCalibration] = useState(false);
 
-  // Load calibration defaults on mount
+  // --- Load calibration defaults ---
   useEffect(() => {
     if (isCalibrated && parameterRanges && !hasLoadedCalibration) {
-      const midTemp =
-        (parameterRanges.temperature.min + parameterRanges.temperature.max) / 2;
-      const midTopP =
-        (parameterRanges.topP.min + parameterRanges.topP.max) / 2;
+      const midTemp = (parameterRanges.temperature.min + parameterRanges.temperature.max) / 2;
+      const midTopP = (parameterRanges.topP.min + parameterRanges.topP.max) / 2;
       const midTokens = Math.round(
         (parameterRanges.maxTokens.min + parameterRanges.maxTokens.max) / 2
       );
       const midFreq =
         (parameterRanges.frequencyPenalty.min + parameterRanges.frequencyPenalty.max) / 2;
       const midPresence =
-        (parameterRanges.presencePenalty?.min ?? 0) +
-        (parameterRanges.presencePenalty?.max ?? 0) / 2;
+        ((parameterRanges.presencePenalty?.min ?? 0) +
+          (parameterRanges.presencePenalty?.max ?? 0)) / 2;
 
       setParameter('temperature', midTemp);
       setParameter('topP', midTopP);
@@ -59,21 +56,12 @@ export default function ExperimentPage() {
       setParameter('frequencyPenalty', midFreq);
       setParameter('presencePenalty', midPresence);
 
-      console.log('[DEBUG] Calibration parameters loaded:', {
-        midTemp,
-        midTopP,
-        midTokens,
-        midFreq,
-        midPresence,
-      });
-
       setHasLoadedCalibration(true);
       addToast('✨ Calibration settings loaded from previous session', 'info', 4000);
     }
   }, [isCalibrated, parameterRanges, hasLoadedCalibration, setParameter, addToast]);
 
-
-  // --- Handle generation ---
+  // --- Generate Response ---
   const handleGenerate = async () => {
     if (!currentPrompt.trim()) {
       addToast('Please enter a prompt before generating', 'warning');
@@ -108,9 +96,8 @@ export default function ExperimentPage() {
           prompt: currentPrompt,
           calibrationId: currentCalibrationId,
           parameters: currentParameters,
-          responseCount, // 🆕 send response count to backend
+          responseCount,
         }),
-
       });
 
       const result = await response.json();
@@ -136,21 +123,32 @@ export default function ExperimentPage() {
     }
   };
 
-  // --- Reset experiment ---
+  // --- Reset Experiment ---
   const handleReset = () => {
     setPrompt('');
     setResponses([]);
     addToast('Experiment reset', 'info');
   };
 
-  // Reset "Generating..." if prompt changes
+  // --- Recalibrate ---
+  const handleRecalibrate = () => {
+    const confirmReset = confirm(
+      'Recalibrating will clear current parameters and open the calibration tool. Continue?'
+    );
+    if (confirmReset) {
+      router.push('/calibration');
+    }
+  };
+
   useEffect(() => {
     setGenerating(false);
   }, [currentPrompt]);
 
+  // --- Render ---
   return (
     <div className="w-full">
       <div className="px-6 md:px-8">
+        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#FF7E47]/20 to-[#EF6E37]/10 border border-[#FF7E47]/30">
@@ -166,33 +164,35 @@ export default function ExperimentPage() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          {/* --- Top Action Buttons --- */}
+          <div className="flex gap-2 flex-wrap justify-end">
             {isCalibrated && (
               <Button
-                onClick={() => router.push('/calibration')}
-                className="bg-gradient-to-r from-[#4A8FFF] to-[#FF7E47] text-white hover:brightness-110 transition-all"
+                onClick={handleRecalibrate}
+                className="bg-gradient-to-r from-[#4A8FFF] to-[#FF7E47] text-white hover:brightness-110"
               >
-                <Sliders className="w-4 h-4" />
+                <Sliders className="w-4 h-4 mr-1" />
                 Recalibrate
               </Button>
             )}
-            {currentResponses.length > 0 && (
-              <>
-                <Button
-                  variant="secondary"
-                  onClick={() => setIsExportModalOpen(true)}
-                >
-                  <Download className="w-4 h-4" />
-                  Export Data
-                </Button>
-                <Button variant="ghost" onClick={handleReset}>
-                  Reset Experiment
-                </Button>
-              </>
-            )}
+
+            <Button
+              variant="secondary"
+              onClick={() => setIsExportModalOpen(true)}
+              disabled={currentResponses.length === 0}
+            >
+              <Download className="w-4 h-4 mr-1" />
+              Export Data
+            </Button>
+
+            <Button variant="ghost" onClick={handleReset}>
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Reset Experiment
+            </Button>
           </div>
         </div>
 
+        {/* --- Main content --- */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <PromptInput
@@ -202,10 +202,10 @@ export default function ExperimentPage() {
             />
 
             <Card className="p-6 space-y-4">
-              {/* 🆕 Response Count Selector */}
+              {/* Response Count Selector */}
               <div className="flex justify-center gap-2 mb-2">
                 {[1, 3, 5, 20, 100].map((count) => {
-                  const disabled = count > 5; // lock 20/100 for normal users
+                  const disabled = count > 5;
                   return (
                     <Button
                       key={count}
@@ -241,7 +241,7 @@ export default function ExperimentPage() {
               </Button>
             </Card>
 
-
+            {/* Responses */}
             {currentResponses.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -268,11 +268,9 @@ export default function ExperimentPage() {
             )}
           </div>
 
+          {/* Right Panel */}
           <div className="space-y-6">
-            <ParameterControls
-              parameters={currentParameters}
-              onChange={setParameter}
-            />
+            <ParameterControls parameters={currentParameters} onChange={setParameter} />
           </div>
         </div>
       </div>
@@ -309,7 +307,6 @@ function ResponseCard({ response, index }: ResponseCardProps) {
                 Response {index + 1}{' '}
                 {response.parameters.variationType === 'exact' ? '🎯 Exact' : '🔀 Varied'}
               </h3>
-
               <p className="text-xs text-gray-400">
                 T: {response.parameters.temperature.toFixed(1)} | P: {response.parameters.topP.toFixed(2)}
               </p>

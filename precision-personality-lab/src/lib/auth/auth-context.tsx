@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  authReady: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -21,30 +22,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const { addToast } = useUIStore();
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    let mounted = true;
 
-      if (session?.user) {
-        logAuditEvent('session_restored', { email: session.user.email });
-      }
-    });
+    async function initSession() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
+        if (!mounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        setAuthReady(true);
 
-        if (event === 'SIGNED_IN' && session?.user) {
+        // Guard to avoid undefined UUID errors
+        if (session?.user?.id) {
+          await logAuditEvent('session_restored', { email: session.user.email });
+        } else {
+          console.warn('⚠️ Skipped session_restored audit — no user.id present.');
+        }
+      } catch (err) {
+        console.error('Auth init error:', err);
+        setLoading(false);
+        setAuthReady(false);
+      }
+    }
+
+    initSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
+        if (!mounted) return;
+
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        setAuthReady(true);
+
+        if (event === 'SIGNED_IN' && session?.user?.id) {
           addToast('Welcome back!', 'success');
           await logAuditEvent('sign_in', { email: session.user.email });
         } else if (event === 'SIGNED_OUT') {
@@ -53,15 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [addToast]);
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         addToast(error.message, 'error');
@@ -84,6 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: err };
       }
 
+      // Ensure user.id exists before logging
+      if (data.session.user?.id) {
+        await logAuditEvent('sign_in', { email: data.session.user.email });
+      }
+
       return { error: null };
     } catch (error) {
       const err = error as Error;
@@ -101,9 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       });
 
       if (error) {
@@ -116,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
-      if (data.user) {
+      if (data.user?.id) {
         await logAuditEvent('sign_up', { email });
       }
 
@@ -135,12 +158,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await logAuditEvent('sign_out');
+      if (user?.id) {
+        await logAuditEvent('sign_out', { email: user.email });
+      }
       const { error } = await supabase.auth.signOut();
       if (error) {
         addToast(error.message, 'error');
       }
     } catch (error) {
+      console.error('Sign-out error:', error);
       addToast('Error signing out', 'error');
     }
   };
@@ -151,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         loading,
+        authReady,
         signIn,
         signUp,
         signOut,
