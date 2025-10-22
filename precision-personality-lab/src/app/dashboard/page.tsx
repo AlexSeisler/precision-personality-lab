@@ -11,6 +11,8 @@ import {
   Archive,
   Trash2,
   Save,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,7 +20,12 @@ import { useDashboardStore } from '@/store/dashboard-store';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useUIStore } from '@/store/ui-store';
 import { supabase } from '@/lib/supabase/client';
-import { exportUserData, exportFullUserData, discardExperiment, saveExperiment } from '@/lib/api/exports';
+import {
+  exportUserData,
+  exportFullUserData,
+  discardExperiment,
+  saveExperiment,
+} from '@/lib/api/exports';
 import { getAllCalibrations } from '@/lib/api/calibrations';
 import { useRealtimeExperiments } from '@/lib/realtime/hooks';
 import type { Database } from '@/lib/supabase/types';
@@ -41,6 +48,9 @@ export default function DashboardPage() {
     setSelectedExperiment,
     isLoading,
     setLoading,
+    selectedExperiments,
+    toggleExperimentSelection,
+    clearSelections,
   } = useDashboardStore();
 
   const [calibrations, setCalibrations] = useState<CalibrationRow[]>([]);
@@ -82,7 +92,7 @@ export default function DashboardPage() {
 
       setExperiments(experimentsData || []);
 
-      const calibrationsData = await getAllCalibrations();
+      const calibrationsData = await getAllCalibrations(user.id);
       setCalibrations(calibrationsData);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -95,8 +105,16 @@ export default function DashboardPage() {
   const handleExport = async (format: 'csv' | 'json') => {
     setIsExporting(true);
     try {
-      await exportUserData(format);
-      addToast(`Export complete: ${format.toUpperCase()}`, 'success');
+      if (selectedExperiments.length > 0) {
+        await exportUserData(format, selectedExperiments);
+        addToast(
+          `Exported ${selectedExperiments.length} selected experiments (${format.toUpperCase()})`,
+          'success'
+        );
+      } else {
+        await exportUserData(format);
+        addToast(`Exported all experiments (${format.toUpperCase()})`, 'success');
+      }
     } catch (error) {
       addToast('Export failed', 'error');
     } finally {
@@ -175,6 +193,17 @@ export default function DashboardPage() {
                 <Filter className="w-4 h-4" />
                 Filters
               </Button>
+
+              {selectedExperiments.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={clearSelections}
+                  className="text-gray-300 border-gray-600 hover:bg-gray-800"
+                >
+                  Clear ({selectedExperiments.length})
+                </Button>
+              )}
+
               <Button
                 onClick={handleFullExport}
                 isLoading={isExporting}
@@ -190,7 +219,9 @@ export default function DashboardPage() {
                 disabled={isExporting || filteredExperiments.length === 0}
               >
                 <Download className="w-4 h-4" />
-                Export CSV
+                {selectedExperiments.length > 0
+                  ? `Export ${selectedExperiments.length} (CSV)`
+                  : 'Export CSV'}
               </Button>
               <Button
                 variant="secondary"
@@ -199,80 +230,12 @@ export default function DashboardPage() {
                 disabled={isExporting || filteredExperiments.length === 0}
               >
                 <Download className="w-4 h-4" />
-                Export JSON
+                {selectedExperiments.length > 0
+                  ? `Export ${selectedExperiments.length} (JSON)`
+                  : 'Export JSON'}
               </Button>
             </div>
           </div>
-
-          {showFilters && (
-            <Card className="p-6 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-300 mb-2 block">
-                    Search
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search prompts..."
-                      value={filters.searchTerm || ''}
-                      onChange={(e) =>
-                        setFilters({ searchTerm: e.target.value })
-                      }
-                      className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-[#4A8FFF]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-300 mb-2 block">
-                    Calibration
-                  </label>
-                  <select
-                    value={filters.calibrationId || ''}
-                    onChange={(e) =>
-                      setFilters({
-                        calibrationId: e.target.value || undefined,
-                      })
-                    }
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#4A8FFF]"
-                  >
-                    <option value="">All Calibrations</option>
-                    {calibrations.map((cal) => (
-                      <option key={cal.id} value={cal.id}>
-                        {cal.mode} - {new Date(cal.created_at).toLocaleDateString()}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-300 mb-2 block">
-                    From Date
-                  </label>
-                  <input
-                    type="date"
-                    value={filters.dateFrom || ''}
-                    onChange={(e) => setFilters({ dateFrom: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#4A8FFF]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-300 mb-2 block">
-                    To Date
-                  </label>
-                  <input
-                    type="date"
-                    value={filters.dateTo || ''}
-                    onChange={(e) => setFilters({ dateTo: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#4A8FFF]"
-                  />
-                </div>
-              </div>
-            </Card>
-          )}
         </motion.div>
 
         {isLoading ? (
@@ -297,10 +260,8 @@ export default function DashboardPage() {
                 key={experiment.id}
                 experiment={experiment}
                 index={index}
-                onSelect={() => setSelectedExperiment(experiment)}
                 onDiscard={() => handleDiscard(experiment.id)}
                 onSave={() => handleSave(experiment.id)}
-                isSelected={selectedExperiment?.id === experiment.id}
               />
             ))}
           </div>
@@ -313,20 +274,16 @@ export default function DashboardPage() {
 interface ExperimentCardProps {
   experiment: ExperimentRow;
   index: number;
-  onSelect: () => void;
   onDiscard: () => void;
   onSave: () => void;
-  isSelected: boolean;
 }
 
-function ExperimentCard({
-  experiment,
-  index,
-  onSelect,
-  onDiscard,
-  onSave,
-  isSelected,
-}: ExperimentCardProps) {
+function ExperimentCard({ experiment, index, onDiscard, onSave }: ExperimentCardProps) {
+  const {
+    selectedExperiments,
+    toggleExperimentSelection,
+  } = useDashboardStore();
+
   const params = experiment.parameters as {
     temperature?: number;
     topP?: number;
@@ -335,6 +292,8 @@ function ExperimentCard({
 
   const responses = experiment.responses as Array<unknown>;
   const responseCount = Array.isArray(responses) ? responses.length : 0;
+
+  const isSelected = selectedExperiments.includes(experiment.id);
 
   return (
     <motion.div
@@ -345,25 +304,43 @@ function ExperimentCard({
       <Card
         hoverable
         className={`p-6 cursor-pointer transition-all ${
-          isSelected ? 'ring-2 ring-[#4A8FFF]' : ''
+          isSelected
+            ? 'ring-2 ring-[#4A8FFF] bg-[#4A8FFF]/5'
+            : 'hover:bg-white/5'
         }`}
-        onClick={onSelect}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleExperimentSelection(experiment.id);
+        }}
       >
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center gap-2">
-                {experiment.saved && (
-                  <span className="px-2 py-1 rounded-md bg-green-500/20 text-green-400 text-xs font-medium">
-                    Saved
-                  </span>
+              <button
+                className="focus:outline-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExperimentSelection(experiment.id);
+                }}
+              >
+                {isSelected ? (
+                  <CheckSquare className="w-4 h-4 text-[#4A8FFF]" />
+                ) : (
+                  <Square className="w-4 h-4 text-gray-500" />
                 )}
-                <span className="text-xs text-gray-400">
-                  <Calendar className="inline w-3 h-3 mr-1" />
-                  {new Date(experiment.created_at).toLocaleDateString()}
+              </button>
+
+              {experiment.saved && (
+                <span className="px-2 py-1 rounded-md bg-green-500/20 text-green-400 text-xs font-medium">
+                  Saved
                 </span>
-              </div>
+              )}
+              <span className="text-xs text-gray-400">
+                <Calendar className="inline w-3 h-3 mr-1" />
+                {new Date(experiment.created_at).toLocaleDateString()}
+              </span>
             </div>
+
             <p className="text-white font-medium mb-2 line-clamp-2">
               {experiment.prompt}
             </p>
@@ -406,12 +383,16 @@ function ExperimentCard({
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <span className="text-gray-500">ID:</span>
-                <span className="text-gray-300 ml-2">{experiment.id.slice(0, 8)}...</span>
+                <span className="text-gray-300 ml-2">
+                  {experiment.id.slice(0, 8)}...
+                </span>
               </div>
               <div>
                 <span className="text-gray-500">Calibration:</span>
                 <span className="text-gray-300 ml-2">
-                  {experiment.calibration_id ? experiment.calibration_id.slice(0, 8) + '...' : 'None'}
+                  {experiment.calibration_id
+                    ? experiment.calibration_id.slice(0, 8) + '...'
+                    : 'None'}
                 </span>
               </div>
             </div>

@@ -142,7 +142,7 @@ export function AuthForm() {
         </Card>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Master your model&apos;s mind — control the precision, calibrate the creativity</p>
+          <p>Master your model&apos;s mind, control the precision, calibrate the creativity</p>
         </div>
       </motion.div>
     </div>

@@ -63,7 +63,7 @@ export async function logAuditEvent(
 
     // 🚫 Bail if still no user or invalid UUID
     if (!user?.id || !UUID_REGEX.test(user.id)) {
-      console.warn(`⚠️ Skipping audit log "${eventType}" — invalid or missing user.id`, {
+      console.warn(`⚠️ Skipping audit log "${eventType}"- invalid or missing user.id`, {
         receivedId: user?.id,
       });
       return;

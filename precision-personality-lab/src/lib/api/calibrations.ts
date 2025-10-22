@@ -14,7 +14,7 @@ async function recordTelemetry(event: string, meta: Record<string, unknown>) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.id || !UUID_REGEX.test(user.id)) {
-      console.warn(`⚠️ Skipping telemetry (${event}) — invalid user`);
+      console.warn(`⚠️ Skipping telemetry (${event})  invalid user`);
       return;
     }
 

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * Telemetry middleware — logs performance metrics and latency to Supabase.
+ * Telemetry middleware, logs performance metrics and latency to Supabase.
  * Must synchronously return a callable async function.
  */
 export function withTelemetry(handler: Function) {

@@ -1,5 +1,5 @@
 /*
-  # Precision + Personality Lab — V2.0 Database Schema
+  # Precision + Personality Lab - V2.0 Database Schema
 
   ## Overview
   This migration establishes the complete database architecture for the Precision + Personality Lab,

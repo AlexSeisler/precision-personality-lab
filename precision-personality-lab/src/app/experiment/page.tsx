@@ -1,8 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { FlaskConical, Sparkles, Loader2, Download, Sliders, RotateCcw } from "lucide-react";
+import {
+  FlaskConical,
+  Sparkles,
+  Loader2,
+  Download,
+  Sliders,
+  RotateCcw,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,37 +35,57 @@ export default function ExperimentPage() {
     setGenerating,
   } = useExperimentStore();
 
-  const { isCalibrated, parameterRanges, currentCalibrationId } = useCalibrationStore();
+  const { isCalibrated, parameterRanges, currentCalibrationId } =
+    useCalibrationStore();
   const { addToast } = useUIStore();
   const { computeSummary } = useMetricsStore();
 
   const [responseCount, setResponseCount] = useState(1);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [hasLoadedCalibration, setHasLoadedCalibration] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isRecalibrating, setIsRecalibrating] = useState(false);
 
   // --- Load calibration defaults ---
+  const calibrationToastShown = useRef(false);
+
   useEffect(() => {
-    if (isCalibrated && parameterRanges && !hasLoadedCalibration) {
-      const midTemp = (parameterRanges.temperature.min + parameterRanges.temperature.max) / 2;
-      const midTopP = (parameterRanges.topP.min + parameterRanges.topP.max) / 2;
-      const midTokens = Math.round(
-        (parameterRanges.maxTokens.min + parameterRanges.maxTokens.max) / 2
-      );
-      const midFreq =
-        (parameterRanges.frequencyPenalty.min + parameterRanges.frequencyPenalty.max) / 2;
-      const midPresence =
-        ((parameterRanges.presencePenalty?.min ?? 0) +
-          (parameterRanges.presencePenalty?.max ?? 0)) / 2;
+    const timeout = setTimeout(() => {
+      if (
+        isCalibrated &&
+        parameterRanges &&
+        !hasLoadedCalibration &&
+        !calibrationToastShown.current
+      ) {
+        const midTemp =
+          (parameterRanges.temperature.min + parameterRanges.temperature.max) / 2;
+        const midTopP =
+          (parameterRanges.topP.min + parameterRanges.topP.max) / 2;
+        const midTokens = Math.round(
+          (parameterRanges.maxTokens.min + parameterRanges.maxTokens.max) / 2
+        );
+        const midFreq =
+          (parameterRanges.frequencyPenalty.min +
+            parameterRanges.frequencyPenalty.max) /
+          2;
+        const midPresence =
+          ((parameterRanges.presencePenalty?.min ?? 0) +
+            (parameterRanges.presencePenalty?.max ?? 0)) /
+          2;
 
-      setParameter('temperature', midTemp);
-      setParameter('topP', midTopP);
-      setParameter('maxTokens', midTokens);
-      setParameter('frequencyPenalty', midFreq);
-      setParameter('presencePenalty', midPresence);
+        setParameter('temperature', midTemp);
+        setParameter('topP', midTopP);
+        setParameter('maxTokens', midTokens);
+        setParameter('frequencyPenalty', midFreq);
+        setParameter('presencePenalty', midPresence);
 
-      setHasLoadedCalibration(true);
-      addToast('✨ Calibration settings loaded from previous session', 'info', 4000);
-    }
+        setHasLoadedCalibration(true);
+        addToast('✨ Calibration settings loaded from previous session', 'info', 4000);
+
+        calibrationToastShown.current = true;
+      }
+    }, 250);
+    return () => clearTimeout(timeout);
   }, [isCalibrated, parameterRanges, hasLoadedCalibration, setParameter, addToast]);
 
   // --- Generate Response ---
@@ -78,7 +105,9 @@ export default function ExperimentPage() {
     addToast('Generating response...', 'info');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session) {
         addToast('Authentication required', 'error');
@@ -90,7 +119,7 @@ export default function ExperimentPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           prompt: currentPrompt,
@@ -117,7 +146,10 @@ export default function ExperimentPage() {
       }
     } catch (error) {
       console.error('Generation error:', error);
-      addToast(error instanceof Error ? error.message : 'Failed to generate response', 'error');
+      addToast(
+        error instanceof Error ? error.message : 'Failed to generate response',
+        'error'
+      );
     } finally {
       setGenerating(false);
     }
@@ -130,13 +162,15 @@ export default function ExperimentPage() {
     addToast('Experiment reset', 'info');
   };
 
-  // --- Recalibrate ---
-  const handleRecalibrate = () => {
-    const confirmReset = confirm(
-      'Recalibrating will clear current parameters and open the calibration tool. Continue?'
-    );
-    if (confirmReset) {
+  // --- Recalibrate Modal Logic ---
+  const handleRecalibrateConfirm = async () => {
+    setIsRecalibrating(true);
+    try {
+      await new Promise((res) => setTimeout(res, 400));
       router.push('/calibration');
+    } finally {
+      setIsRecalibrating(false);
+      setShowConfirm(false);
     }
   };
 
@@ -168,7 +202,7 @@ export default function ExperimentPage() {
           <div className="flex gap-2 flex-wrap justify-end">
             {isCalibrated && (
               <Button
-                onClick={handleRecalibrate}
+                onClick={() => setShowConfirm(true)}
                 className="bg-gradient-to-r from-[#4A8FFF] to-[#FF7E47] text-white hover:brightness-110"
               >
                 <Sliders className="w-4 h-4 mr-1" />
@@ -209,10 +243,12 @@ export default function ExperimentPage() {
                   return (
                     <Button
                       key={count}
-                      variant={count === responseCount ? "default" : "outline"}
+                      variant={count === responseCount ? 'default' : 'outline'}
                       disabled={disabled}
                       onClick={() => setResponseCount(count)}
-                      className={`w-12 text-sm ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className={`w-12 text-sm ${
+                        disabled ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
                       {count}
                     </Button>
@@ -270,7 +306,10 @@ export default function ExperimentPage() {
 
           {/* Right Panel */}
           <div className="space-y-6">
-            <ParameterControls parameters={currentParameters} onChange={setParameter} />
+            <ParameterControls
+              parameters={currentParameters}
+              onChange={setParameter}
+            />
           </div>
         </div>
       </div>
@@ -280,6 +319,36 @@ export default function ExperimentPage() {
         onClose={() => setIsExportModalOpen(false)}
         responses={currentResponses}
       />
+
+      {/* Recalibrate Confirmation Modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6 text-white animate-fade-in">
+            <h2 className="text-xl font-semibold mb-2">Recalibrate Model</h2>
+            <p className="text-gray-400 mb-6">
+              Recalibrating will clear current parameters and open the calibration console.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => setShowConfirm(false)}
+                className="bg-gray-700 hover:bg-gray-600 text-gray-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRecalibrateConfirm}
+                disabled={isRecalibrating}
+                className="bg-gradient-to-r from-[#4A8FFF] to-[#7B68EE] hover:opacity-90"
+              >
+                {isRecalibrating ? 'Recalibrating...' : 'Confirm'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -305,10 +374,13 @@ function ResponseCard({ response, index }: ResponseCardProps) {
             <div>
               <h3 className="font-semibold text-white">
                 Response {index + 1}{' '}
-                {response.parameters.variationType === 'exact' ? '🎯 Exact' : '🔀 Varied'}
+                {response.parameters.variationType === 'exact'
+                  ? '🎯 Exact'
+                  : '🔀 Varied'}
               </h3>
               <p className="text-xs text-gray-400">
-                T: {response.parameters.temperature.toFixed(1)} | P: {response.parameters.topP.toFixed(2)}
+                T: {response.parameters.temperature.toFixed(1)} | P:{' '}
+                {response.parameters.topP.toFixed(2)}
               </p>
             </div>
           </div>

@@ -177,11 +177,14 @@ export default function CalibrationPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setCalibrationMode(calibrationMode === 'quick' ? 'deep' : 'quick')}
+              disabled
+              className="opacity-50 cursor-not-allowed select-none"
+              title="Deep Mode coming soon"
             >
-              Switch to {calibrationMode === 'quick' ? 'Deep' : 'Quick'} Mode
+              Switch to Deep Mode
             </Button>
           </div>
+
         </div>
 
         <div className="mb-6">

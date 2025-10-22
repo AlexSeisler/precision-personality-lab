@@ -1,5 +1,5 @@
 /*
-  # Precision + Personality Lab — V2.1 Audit Logging System
+  # Precision + Personality Lab - V2.1 Audit Logging System
 
   ## Overview
   This migration adds comprehensive audit logging capabilities to track user interactions,

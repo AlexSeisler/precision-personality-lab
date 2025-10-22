@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user?.id) {
           await logAuditEvent('session_restored', { email: session.user.email });
         } else {
-          console.warn('⚠️ Skipped session_restored audit — no user.id present.');
+          console.warn('⚠️ Skipped session_restored audit, no user.id present.');
         }
       } catch (err) {
         console.error('Auth init error:', err);
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}` },
       });
 
       if (error) {

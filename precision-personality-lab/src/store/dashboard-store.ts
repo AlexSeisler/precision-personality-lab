@@ -15,8 +15,14 @@ interface DashboardState {
   filteredExperiments: ExperimentRow[];
   filters: DashboardFilters;
   isLoading: boolean;
+
+  // Current single-selection (kept)
   selectedExperiment: ExperimentRow | null;
 
+  // 🔹 New multi-selection state
+  selectedExperiments: string[];
+
+  // Core actions
   setExperiments: (experiments: ExperimentRow[]) => void;
   addExperiment: (experiment: ExperimentRow) => void;
   removeExperiment: (id: string) => void;
@@ -26,6 +32,10 @@ interface DashboardState {
   setLoading: (loading: boolean) => void;
   applyFilters: () => void;
   reset: () => void;
+
+  // 🔹 New multi-selection actions
+  toggleExperimentSelection: (id: string) => void;
+  clearSelections: () => void;
 }
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
@@ -34,6 +44,9 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   filters: {},
   isLoading: false,
   selectedExperiment: null,
+
+  // 🔹 Initialize new selection state
+  selectedExperiments: [],
 
   setExperiments: (experiments) => {
     set({ experiments, filteredExperiments: experiments });
@@ -52,6 +65,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       experiments: state.experiments.filter((e) => e.id !== id),
       selectedExperiment:
         state.selectedExperiment?.id === id ? null : state.selectedExperiment,
+      selectedExperiments: state.selectedExperiments.filter((x) => x !== id),
     }));
     get().applyFilters();
   },
@@ -92,9 +106,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
     if (filters.dateFrom) {
       const fromDate = new Date(filters.dateFrom);
-      filtered = filtered.filter(
-        (e) => new Date(e.created_at) >= fromDate
-      );
+      filtered = filtered.filter((e) => new Date(e.created_at) >= fromDate);
     }
 
     if (filters.dateTo) {
@@ -114,6 +126,17 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     set({ filteredExperiments: filtered });
   },
 
+  // 🔹 Add multi-select actions
+  toggleExperimentSelection: (id) => {
+    set((state) => ({
+      selectedExperiments: state.selectedExperiments.includes(id)
+        ? state.selectedExperiments.filter((x) => x !== id)
+        : [...state.selectedExperiments, id],
+    }));
+  },
+
+  clearSelections: () => set({ selectedExperiments: [] }),
+
   reset: () => {
     set({
       experiments: [],
@@ -121,6 +144,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       filters: {},
       isLoading: false,
       selectedExperiment: null,
+      selectedExperiments: [],
     });
   },
 }));

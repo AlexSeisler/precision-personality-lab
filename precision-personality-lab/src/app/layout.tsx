@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
 import { AuthProvider } from "@/lib/auth/auth-context";
+import { AuthRedirectWatcher } from "@/components/system/AuthRedirectWatcher"; // 👈 Add this import
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +31,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* 👇 This will catch /auth/callback redirects automatically */}
+        <AuthRedirectWatcher />
+
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>

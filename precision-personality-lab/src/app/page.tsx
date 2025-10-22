@@ -49,7 +49,7 @@ export default function Home() {
             </h1>
 
             <p className="text-xl lg:text-2xl text-gray-300 mb-4 max-w-3xl mx-auto">
-              Master your model's mind — control the precision, calibrate the creativity
+              Master your model's mind, control the precision, calibrate the creativity
             </p>
 
             <p className="text-lg text-gray-400 mb-12 max-w-2xl mx-auto">

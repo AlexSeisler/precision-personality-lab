@@ -6,16 +6,36 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useUIStore } from "@/store/ui-store";
+import { useCalibrationStore } from "@/store/calibration-store";
+import { useExperimentStore } from "@/store/experiment-store";
+import { supabase } from "@/lib/supabase/client";
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const { isRealtimeConnected, lastSyncTime } = useUIStore();
+
+  const clearUI = useUIStore((s) => s.reset);
+  const clearCalibration = useCalibrationStore((s) => s.reset);
+  const clearExperiment = useExperimentStore((s) => s.reset);
+
+  // --- handleSignOut replaces direct signOut call ---
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      clearUI?.();
+      clearCalibration?.();
+      clearExperiment?.();
+      router.push("/"); // ✅ redirect to your sign-in page
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   const formatSyncTime = (time: number | null) => {
     if (!time) return "Never";
@@ -88,7 +108,6 @@ export function Header({ onMenuClick }: HeaderProps) {
       {/* Center: Navigation */}
       {user && (
         <nav className="hidden md:flex items-center gap-2 ml-8">
-          {/* Always visible Dashboard button */}
           <Link
             href="/dashboard"
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
@@ -101,7 +120,6 @@ export function Header({ onMenuClick }: HeaderProps) {
             <span>Dashboard</span>
           </Link>
 
-          {/* Conditionally visible navigation to Experiment Studio */}
           {(isDashboard || !isExperiment) && (
             <button
               onClick={() => router.push("/experiment")}
@@ -122,13 +140,9 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="ml-auto flex items-center gap-3">
         {user && (
           <>
-            {/* Realtime Status Indicator */}
+            {/* Connection Status */}
             <motion.div
-              className="
-                hidden lg:flex flex-col items-end gap-0.5
-                px-3 py-1.5 rounded-lg
-                bg-black/40 border border-white/10
-              "
+              className="hidden lg:flex flex-col items-end gap-0.5 px-3 py-1.5 rounded-lg bg-black/40 border border-white/10"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
@@ -157,13 +171,9 @@ export function Header({ onMenuClick }: HeaderProps) {
               </p>
             </motion.div>
 
-            {/* User Info */}
+            {/* User Email */}
             <motion.div
-              className="
-                hidden md:flex items-center gap-2
-                px-4 py-2 rounded-lg
-                bg-white/5 border border-white/10
-              "
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10"
               whileHover={{ backgroundColor: "rgba(255,255,255,0.08)" }}
               transition={{ duration: 0.2 }}
             >
@@ -171,16 +181,10 @@ export function Header({ onMenuClick }: HeaderProps) {
               <span className="text-sm text-gray-300">{user.email}</span>
             </motion.div>
 
-            {/* Sign Out */}
+            {/* ✅ Sign Out Button (fixed) */}
             <motion.button
-              onClick={signOut}
-              className="
-                flex items-center gap-2 px-4 py-2 rounded-lg
-                bg-white/5 border border-white/10
-                hover:bg-white/10 hover:border-[#FF7E47]/50
-                text-sm text-gray-300 hover:text-white
-                transition-all
-              "
+              onClick={handleSignOut}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#FF7E47]/50 text-sm text-gray-300 hover:text-white transition-all"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
