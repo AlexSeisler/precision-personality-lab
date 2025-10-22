@@ -181,16 +181,15 @@ For deeper details, see `/docs/security.md`.
 
 All project documentation is located in the `/docs` directory and follows a modular format:
 
-| File | Description |
-|------|--------------|
-| `/docs/architecture.md` | Full system architecture, module breakdown, and data flow. |
-| `/docs/security.md` | Security, authentication, and compliance mechanisms. |
-| `/docs/integrations.md` | Service integrations with Supabase, OpenAI, and Vercel. |
-| `/docs/diagrams.md` | Visual ERDs, UMLs, and system topologies. |
-| `/docs/time-estimates.csv` | Engineering effort estimates and variance tracking. |
+| File                                           | Description                                                |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| [architecture.md](/docs/architecture.md)       | Full system architecture, module breakdown, and data flow. |
+| [security.md](/docs/security.md)               | Security, authentication, and compliance mechanisms.       |
+| [integrations.md](/docs/integrations.md)       | Service integrations with Supabase, OpenAI, and Vercel.    |
+| [diagrams.md](/docs/diagrams.md)               | Visual ERDs, UMLs, and system topologies.                  |
+| [time-estimates.csv](/docs/time-estimates.csv) | Engineering effort estimates and variance tracking.        |
 
 📘 Each file is written for **clarity and audit readiness**, suitable for **technical assessments** or **case study reviews**.
-
 
 ---
 
