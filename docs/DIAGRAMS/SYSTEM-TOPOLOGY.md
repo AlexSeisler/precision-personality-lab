@@ -18,19 +18,19 @@ It is intended for:
 
 ```mermaid
 graph LR
-A[User Interface (Next.js)] --> B[API Layer ("/api/generate")]
-A --> C[Realtime Listeners (Supabase Channels)]
-B --> D[Middleware Stack]
-D --> E[OpenAI GPT-4o API]
-D --> F[Supabase Database]
-F --> G[(Experiments)]
-F --> H[(Calibrations)]
-F --> I[(Analytics Summaries)]
-F --> J[(Audit Logs)]
-F --> K[(System Metrics)]
-G --> L[Realtime Updates]
+A["User Interface (Next.js)"] --> B["API Layer (/api/generate)"]
+A --> C["Realtime Listeners (Supabase Channels)"]
+B --> D["Middleware Stack"]
+D --> E["OpenAI GPT-4o API"]
+D --> F["Supabase Database"]
+F --> G["(Experiments)"]
+F --> H["(Calibrations)"]
+F --> I["(Analytics Summaries)"]
+F --> J["(Audit Logs)"]
+F --> K["(System Metrics)"]
+G --> L["Realtime Updates"]
 L --> A
-I --> M[Dashboard Visualization]
+I --> M["Dashboard Visualization"]
 M --> A
 ```
 
@@ -193,21 +193,21 @@ Every major lifecycle event is inserted into `audit_logs`:
 
 ```mermaid
 flowchart TB
-subgraph User Environment
-A[Browser] -->|HTTPS| B[Next.js App (Vercel Edge)]
+subgraph "User Environment"
+A["Browser"] -->|"HTTPS"| B["Next.js App (Vercel Edge)"]
 end
 
-subgraph Backend
-B -->|API Calls| C[Serverless Functions ("/api/*")]
-C -->|Auth + Data| D[(Supabase Postgres)]
-C -->|Inference| E[OpenAI GPT-4o API]
-D -->|Realtime Sync| B
+subgraph "Backend"
+B -->|"API Calls"| C["Serverless Functions (/api/*)"]
+C -->|"Auth + Data"| D["Supabase Postgres"]
+C -->|"Inference"| E["OpenAI GPT-4o API"]
+D -->|"Realtime Sync"| B
 end
 
-subgraph Monitoring
-D --> F[(system_metrics)]
-C --> G[(audit_logs)]
-F --> H[Analytics Dashboard]
+subgraph "Monitoring"
+D --> F["system_metrics"]
+C --> G["audit_logs"]
+F --> H["Analytics Dashboard"]
 end
 ```
 
