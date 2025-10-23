@@ -1,6 +1,6 @@
 # 🧠 Precision + Personality Lab  
 ### *“Master your model’s mind - control the precision, calibrate the creativity.”*  
-[**🌐 Live Demo → precision-personality-lab.vercel.app**](https://precision-personality-lab.vercel.app/)  
+[**🌐 Live Demo → precision-personality-lab.vercel.app**](https://precision-personality-r4a18rpqc-alex-seislers-projects.vercel.app/)  
 
 ---
 
