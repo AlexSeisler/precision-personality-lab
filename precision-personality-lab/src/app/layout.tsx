@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { AuthRedirectWatcher } from "@/components/system/AuthRedirectWatcher";
-import { SpeedInsights } from "@vercel/speed-insights/next"; // ✅ Added import
+import { AuthGate } from "@/components/system/AuthGate"; // ✅ NEW import
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,10 +37,12 @@ export default function RootLayout({
         <AuthRedirectWatcher />
 
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <AuthGate>
+            <AppShell>{children}</AppShell>
+          </AuthGate>
         </AuthProvider>
 
-        {/* ✅ Add Vercel Speed Insights tracking (must be inside <body>) */}
+        {/* ✅ Vercel Speed Insights tracking */}
         <SpeedInsights />
       </body>
     </html>

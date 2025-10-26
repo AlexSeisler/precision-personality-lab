@@ -9,7 +9,7 @@ import { logAuditEvent } from '@/lib/api/audit-logs';
 /**
  * 🧠 AuthContext
  * Provides Supabase auth state, session management, and lifecycle-safe listeners.
- * This version ensures no hydration flicker by gating state updates behind hydration.
+ * This version includes robust hydration gating for SSR consistency (Vercel-safe).
  */
 
 interface AuthContextType {
@@ -34,21 +34,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * 🧩 Step 1: Mark when client hydration completes.
-   * Prevents premature Supabase listener execution during SSR rehydration.
+   * Prevents premature Supabase listener execution during SSR.
    */
   useEffect(() => {
+    console.log('[AuthContext] 🧩 Client hydration complete');
     setHydrated(true);
   }, []);
 
   /**
-   * 🧩 Step 2: Initialize Supabase session and listen for auth state changes.
-   * This entire block runs only after hydration to avoid SSR timing issues.
+   * 🧩 Step 2: Initialize Supabase session and handle hydration races.
+   * Explicitly captures INITIAL_SESSION events for consistency across SSR.
    */
   useEffect(() => {
-    if (!hydrated) return; // Wait until browser hydration completes
+    if (!hydrated) return;
     let mounted = true;
 
     const initSession = async () => {
+      console.log('[AuthContext] Initializing Supabase session...');
       try {
         const {
           data: { session },
@@ -64,17 +66,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        setAuthReady(true);
-
-        // Guard to avoid undefined UUID errors
-        if (session?.user?.id) {
+        if (session?.user) {
+          setSession(session);
+          setUser(session.user);
+          setAuthReady(true);
+          console.log('[AuthContext] ✅ Session restored:', session.user.email);
           await logAuditEvent('session_restored', { email: session.user.email });
         } else {
-          console.warn('⚠️ Skipped session_restored audit, no user.id present.');
+          console.log('[AuthContext] No existing session found.');
+          setAuthReady(true);
         }
+
+        setLoading(false);
       } catch (err) {
         console.error('Auth init error:', err);
         setLoading(false);
@@ -86,24 +89,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     /**
      * 🧠 Supabase Auth State Listener
-     * Ensures that all session changes are captured after hydration.
+     * Handles INITIAL_SESSION, SIGNED_IN, SIGNED_OUT transitions.
      */
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return;
+        console.log('[AuthContext] Auth event:', event);
 
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        setAuthReady(true);
+        if (event === 'INITIAL_SESSION' && session?.user) {
+          setSession(session);
+          setUser(session.user);
+          setAuthReady(true);
+          setLoading(false);
+          console.log('[AuthContext] 🔄 INITIAL_SESSION resolved');
+        }
 
         if (event === 'SIGNED_IN' && session?.user?.id) {
+          setSession(session);
+          setUser(session.user);
+          setAuthReady(true);
+          setLoading(false);
           addToast('Welcome back!', 'success');
           await logAuditEvent('sign_in', { email: session.user.email });
-        } else if (event === 'SIGNED_OUT') {
-          addToast('Signed out successfully', 'info');
+        }
+
+        if (event === 'SIGNED_OUT') {
+          console.log('[AuthContext] User signed out');
           setUser(null);
           setSession(null);
+          setAuthReady(true);
+          setLoading(false);
+          addToast('Signed out successfully', 'info');
         }
       }
     );
@@ -115,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [hydrated, addToast]);
 
   /**
-   * ✉️ Sign-In Flow — handles direct Supabase password authentication.
+   * ✉️ Sign-In Flow — Direct Supabase authentication.
    */
   const signIn = async (email: string, password: string) => {
     try {
@@ -142,7 +158,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: err };
       }
 
-      // Ensure user.id exists before logging
       if (data.session.user?.id) {
         await logAuditEvent('sign_in', { email: data.session.user.email });
       }
@@ -150,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.session.user);
       setSession(data.session);
       setAuthReady(true);
+      setLoading(false);
 
       return { error: null };
     } catch (error) {
@@ -164,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * ✉️ Sign-Up Flow — ensures production redirect URL is correct.
+   * ✉️ Sign-Up Flow — Ensures redirect URL and audit logging.
    */
   const signUp = async (email: string, password: string) => {
     try {
@@ -206,7 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * 🚪 Sign-Out Flow — clears session and logs audit event.
+   * 🚪 Sign-Out Flow — Clears session and logs event.
    */
   const signOut = async () => {
     try {
